@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="scripts/three.min.js"></script>
+		<script>
+			// Our Javascript will go here.
+			var rotY = 0;
+			
+			//	camera, scene
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000);
+			
+			//	add renderer
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth*.9, window.innerHeight*.9 );
+			document.body.appendChild( renderer.domElement );
+			
+			//	box
+			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			var material = new THREE.MeshBasicMaterial ( { color: 0x00ff00, wireframe: true } );
+			var cube = new THREE.Mesh( geometry, material );
+			scene.add( cube );
+			
+			camera.position.z = 10;
+			
+			var prevTime = performance.now();
+			var movingLeft = false,
+					movingRight = false;
+			var velocity = new THREE.Vector3();
+			
+			$(window).on('keydown', function(e) {
+				var key = e.keyCode;
+				switch (key) {
+					case 65:
+						movingLeft = true;
+						break;
+					case 68:
+						movingRight = true;
+						break;
+				}
+			})
+			
+			$(window).on('keyup', function(e) {
+				var key = e.keyCode;
+				switch (key) {
+					case 65:
+						movingLeft = false;
+						break;
+					case 68:
+						movingRight = false;
+						break;
+				}
+			})
+			
+			render();
+
+			function render() {
+				cube.rotation.x += Math.sign(Math.cos(rotY)) * 0.01;
+				rotY += 0.1;
+				
+				var time = performance.now();
+				var delta = (time - prevTime) / 1000;
+				
+				//	vf = vi - a*dt
+				//	a = 0.025 * vi
+				velocity.x -= velocity.x * 2.5 * delta;
+				
+				if (movingLeft) velocity.x -= 50.0 * delta;
+				if (movingRight) velocity.x += 50.0 * delta;
+				
+				cube.translateX( velocity.x * delta);
+				
+				prevTime = time;
+				
+				renderer.render( scene, camera );
+				requestAnimationFrame( render );
+			}
+			
+		</script>
+	</body>
+</html>
