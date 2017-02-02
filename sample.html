@@ -17,6 +17,7 @@
 			
 			//	camera, scene
 			var scene = new THREE.Scene();
+			scene.background = new THREE.Color(0x0f3066);
 			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000);
 			
 			//	add renderer
@@ -60,6 +61,8 @@
 						break;
 				}
 			})
+			
+			console.log(geometry.faces)
 			
 			render();
 
