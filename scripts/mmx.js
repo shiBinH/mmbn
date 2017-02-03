@@ -15,7 +15,7 @@
 		var geometry, material, mesh;
 		
 		map = {};
-		dashSpeed = 350;
+		dashSpeed = 300;
 		sfx = {};
 		platforms = [];
 		player1 = new THREE.Group(), player2 = new THREE.Group();
@@ -86,7 +86,7 @@
 		player2.velocity = new THREE.Vector3();
 		player2.coreColor = 0x3399ff;
 		player2.shellColor = 0x0066ff;
-		player2.controls = {'U': 38, 'D': 40, 'L': 37, 'R': 39 , 'JUMP': 188, 'FIRE': 190, 'ENABLED': true};
+		player2.controls = {'U': 38, 'D': 40, 'L': 37, 'R': 39 , 'JUMP': 188, 'FIRE': 190, 'DASH': 76, 'ENABLED': true};
 		player2.moving = {'up': false, 'down': false, 'left': false, 'right': false};
 		player2.canJump = true;
 		player2.facingLeft = false;
@@ -96,7 +96,13 @@
 		player2.firing = false;
 		player2.fireStart = performance.now();
 		player2.airborne = false;
+		player2.canDash = performance.now();
 		player2.hpBars = [];
+		player2.dashing = false;
+		player2.dashStart = performance.now();
+		player2.dashJumping = false;
+		player2.dashable = true;
+		player2.dashJumpTimer = null;
 		scene.add(player2);
 		
 		//	hp bars
@@ -186,14 +192,33 @@
 						player2.moving.right = true; player2.facingLeft = false; break;
 					case player2.controls.JUMP:
 						if (player2.canJump) {
-							player2.velocity.y += 350;
+							if (player2.dashJumpTimer === null) player2.dashJumpTimer = performance.now();
+							else if (performance.now() - player2.dashJumpTimer < 100) player2.dashJump = true;
+							map[player2.controls.JUMP] = true;
+							player2.velocity.y += 350;	//	350
 							sfx['jump'].play();
 							player2.airborne = true;
+							if (player2.dashing) player1.dashJump = true;
 						}
 						player2.canJump = false; break;
 					case player2.controls.FIRE:
 						player2.firing = true;
-						break;							
+						break;		
+					case player2.controls.DASH:
+						if (player2.airborne && performance.now()-player2.dashJumpTimer<50) {
+							sfx['dash'].play()
+							map[player2.controls.DASH] = true;
+							player1.dashing = true;
+							player1.dashable = false;
+						}
+						else if (!player2.airborne && player2.dashable && !player2.dashing) {
+							if (player2.dashJumpTimer === null) player2.dashJumpTimer = performance.now();
+							map[player2.controls.DASH] = true;
+							sfx['dash'].play()
+							player2.dashStart = performance.now();
+							player2.dashing = true;
+							player2.dashable = false;
+						}
 				}
 			}
 			if (key === 80) {
@@ -232,7 +257,14 @@
 				case player2.controls.FIRE:
 					player2.firing = false;
 				case player2.controls.JUMP:
-					if (player2.velocity.y > 0) player2.velocity.y = 0;
+					map[player2.controls.JUMP] = false;
+					if (player2.velocity.y > 0 ) player2.velocity.y = 0;
+					break;
+				case player2.controls.DASH:
+					map[player2.controls.DASH] = false;
+					player2.dashing = false;
+					player2.velocity.x = 0;
+					player2.dashable = true;
 					break;
 			}
 		})
@@ -249,9 +281,6 @@
 		var acceleration = 1500;
 		var delta = (time - prevTime)/1000;
 		var Vx = 150;
-		
-		//	if (!player.dashing) player.velocity.x -= player.velocity.x * deceleration * delta;
-		//	else player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
 		
 		player.velocity.y -= g * delta;
 		
@@ -281,8 +310,11 @@
 		else if (player.dashing) {
 			if (time - player.dashStart < 300) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
 			else {
+				/*
 				if (player.moving.left || player.moving.right) player.velocity.x = (player.facingLeft?-1:1)*Vx;
 				else player.velocity.x = 0;
+				*/
+				player.velocity.x = 0;
 				player.dashing = false;	
 			}
 		}
