@@ -7,13 +7,15 @@
 	var prevTime;
 	var sfx;
 	var dashSpeed;
+	var map;
 	
 	init();
 	
 	function init() {
 		var geometry, material, mesh;
 		
-		dashSpeed = 500;
+		map = {};
+		dashSpeed = 400;
 		sfx = {};
 		platforms = [];
 		player1 = new THREE.Group(), player2 = new THREE.Group();
@@ -46,16 +48,16 @@
 		scene.add(new THREE.Line(geometry, material));
 		
 		//	players
-		material = new THREE.MeshBasicMaterial({color: new THREE.Color('green'), wireframe: true})
+		material = new THREE.MeshBasicMaterial({color: 0x0040ff, wireframe: true})
 		geometry = new THREE.SphereGeometry(10);
 		player1.add(new THREE.Mesh(geometry, material));
-		material = new THREE.MeshBasicMaterial({color: new THREE.Color('yellow')})
+		material = new THREE.MeshBasicMaterial({color: 0xff1a1a})
 		geometry = new THREE.SphereGeometry(3);
 		player1.add(new THREE.Mesh(geometry, material));
-		player1.coreColor = 'yellow';
-		player1.shellColor = 'green';
+		player1.coreColor = 0xff1a1a;
+		player1.shellColor = 0x0040ff;
 		player1.velocity = new THREE.Vector3();
-		player1.controls = {'U': 89, 'D': 72, 'L': 71, 'R': 74, 'JUMP': 90, 'FIRE': 88, 'DASH': 83, 'ENABLED': true};
+		player1.controls = {'U': 84, 'D': 71, 'L': 70, 'R': 72, 'JUMP': 90, 'FIRE': 88, 'DASH': 83, 'ENABLED': true};
 		player1.moving = {'up': false, 'down': false, 'left': false, 'right': false};
 		player1.canJump = true;
 		player1.facingLeft = false;
@@ -66,17 +68,22 @@
 		player1.fireStart = performance.now();
 		player1.airborne = false;
 		player1.canDash = performance.now();
+		player1.hpBars = [];
+		player1.dashing = false;
+		player1.dashStart = performance.now();
+		player1.dashJumping = false;
+		player1.dashable = true;
 		scene.add(player1);
 		
-		material = new THREE.MeshBasicMaterial({color: new THREE.Color('lightblue'), wireframe: true})
+		material = new THREE.MeshBasicMaterial({color: 0x0066ff, wireframe: true})
 		geometry = new THREE.SphereGeometry(10);
 		player2.add(new THREE.Mesh(geometry, material));
-		material = new THREE.MeshBasicMaterial({color: new THREE.Color('orange')})
+		material = new THREE.MeshBasicMaterial({color: 0x3399ff})
 		geometry = new THREE.SphereGeometry(3);
 		player2.add(new THREE.Mesh(geometry, material));
 		player2.velocity = new THREE.Vector3();
-		player2.coreColor = 'orange';
-		player2.shellColor = 'lightblue';
+		player2.coreColor = 0x3399ff;
+		player2.shellColor = 0x0066ff;
 		player2.controls = {'U': 38, 'D': 40, 'L': 37, 'R': 39 , 'JUMP': 188, 'FIRE': 190, 'ENABLED': true};
 		player2.moving = {'up': false, 'down': false, 'left': false, 'right': false};
 		player2.canJump = true;
@@ -87,10 +94,33 @@
 		player2.firing = false;
 		player2.fireStart = performance.now();
 		player2.airborne = false;
+		player2.hpBars = [];
 		scene.add(player2);
 		
-		//	generate map
+		//	hp bars
+		for (var i=0 ; i<5 ; i++) {
+			material = material = new THREE.LineBasicMaterial({color: new THREE.Color('green')});
+			geometry = new THREE.Geometry();
+			var height = 200 - 4*i;
+			geometry.vertices.push(new THREE.Vector3(-212, height, 0));
+			geometry.vertices.push(new THREE.Vector3(-205, height, 0));
+			mesh = new THREE.Line(geometry, material);
+			scene.add(mesh);
+			player1.hpBars.push(mesh);
+		}
 		
+		for (var i=0 ; i<5 ; i++) {
+			material = material = new THREE.LineBasicMaterial({color: new THREE.Color('yellow')});
+			geometry = new THREE.Geometry();
+			var height = 200 - 4*i;
+			geometry.vertices.push(new THREE.Vector3(212, height, 0));
+			geometry.vertices.push(new THREE.Vector3(205, height, 0));
+			mesh = new THREE.Line(geometry, material);
+			scene.add(mesh);
+			player2.hpBars.push(mesh);
+		}
+		
+		//	generate map
 		for (var i=1 ; i<8 ; i++) {
 			material = new THREE.LineBasicMaterial({color: new THREE.Color('white')});
 			geometry = new THREE.Geometry();
@@ -105,7 +135,6 @@
 			scene.add(mesh);
 		}
 		
-		
 		//	events
 		window.addEventListener( 'resize', onWindowResize, false );
 		window.addEventListener('keydown', function(e) {
@@ -118,21 +147,30 @@
 						player1.moving.right = true; player1.facingLeft = false; break;
 					case player1.controls.JUMP:
 						if (player1.canJump) {
-							player1.velocity.y += 350;
+							player1.velocity.y += 350;	//	350
 							sfx['jump'].play();
 							player1.airborne = true;
+							if (player1.dashing) player1.dashJump = true;
 						}
 						player1.canJump = false; break;
 					case player1.controls.FIRE:
 						player1.firing = true;
 						break;
 					case player1.controls.DASH:
+						if (player1.airborne) break;
+						if (player1.dashable && !player1.dashing) {
+							player1.dashStart = performance.now();
+							player1.dashing = true;
+							player1.dashable = false;
+						}
+						/*
 						var time = performance.now();
 						if (time - player1.canDash >= 700) {
 							player1.velocity.x += Math.sign(player1.velocity.x) * dashSpeed;
 							player1.canDash = time;
 						}
 						break;
+						*/
 				}
 			}
 			if (player2.controls.ENABLED) {
@@ -163,17 +201,32 @@
 			key = e.keyCode;
 			switch(key) {
 				case player1.controls.L:
-					player1.moving.left = false;  break;
+					player1.moving.left = false;  
+					player1.velocity.x = 0; break;
 				case player1.controls.R:
-					player1.moving.right = false; break;
+					player1.moving.right = false; 
+					player1.velocity.x = 0; break;
 				case player1.controls.FIRE:
 					player1.firing = false;
+				case player1.controls.JUMP:
+					if (player1.velocity.y > 0 ) player1.velocity.y = 0;
+					break;
+				case player1.controls.DASH:
+					player1.dashing = false;
+					player1.velocity.x = 0;
+					player1.dashable = true;
+					break;
 				case player2.controls.L:
-					player2.moving.left = false;  break;
+					player2.moving.left = false;  
+					player2.velocity.x = 0; break;
 				case player2.controls.R:
-					player2.moving.right = false; break;
+					player2.moving.right = false; 
+					player2.velocity.x = 0; break;
 				case player2.controls.FIRE:
 					player2.firing = false;
+				case player2.controls.JUMP:
+					if (player2.velocity.y > 0) player2.velocity.y = 0;
+					break;
 			}
 		})
 		
@@ -184,12 +237,15 @@
 	}
 	
 	function updatePlayer(player, time) {
-		var g = 980;
+		var g = 1100;	//	980
 		var deceleration = 10;
 		var acceleration = 1500;
 		var delta = (time - prevTime)/1000;
+		var Vx = 150;
 		
-		player.velocity.x -= player.velocity.x * deceleration * delta;
+		//	if (!player.dashing) player.velocity.x -= player.velocity.x * deceleration * delta;
+		//	else player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
+		
 		player.velocity.y -= g * delta;
 		
 		player.RAY.ray.origin.copy(player.position);
@@ -199,16 +255,30 @@
 			if (player.velocity.y === 0) {
 				player.canJump = true;
 				if (player.airborne) {
-				sfx['land'].play();
-				player.airborne = false;
-			}
+					sfx['land'].play();
+					player.airborne = false;
+					player.dashJump = false;
+				}
 			}
 		}
 		
-		if (player.moving.left) player.velocity.x -= acceleration * delta;
-		if (player.moving.right) player.velocity.x += acceleration * delta;
-		if (Math.abs(player.velocity.x) >= dashSpeed) player.velocity.x = Math.sign(player.velocity.x) * dashSpeed;
-		
+		if (player.moving.left) player.velocity.x = -Vx;
+		if (player.moving.right) player.velocity.x = Vx;
+		if (!player.moving.left && !player.moving.right && player.velocity.x!= 0) player.velocity.x = 0;
+		//if (player.dashJump && (player.moving.left||player.moving.right)) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
+		if  (player.dashJump) {
+			if (player.moving.left||player.moving.right) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
+			else player.velocity.x = 0;
+		}
+		else if (player.dashing) {
+			if (time - player.dashStart < 300) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
+			else {
+				if (player.moving.left || player.moving.right) player.velocity.x = (player.moving.left?-1:1)*Vx;
+				else player.velocity.x = 0;
+				player.dashing = false;	
+			}
+		}
+
 		player.translateX(player.velocity.x * delta);
 		player.translateY(player.velocity.y * delta);
 		
@@ -222,6 +292,7 @@
 			if (player.airborne) {
 				sfx['land'].play();
 				player.airborne = false;
+				player.dashJump = false;
 			}
 		}
 		
@@ -257,6 +328,8 @@
 				scene.remove(scene.getObjectById(id));
 				if (target.hitStart === undefined) {
 					sfx['hit'].play();
+					target.hpBars[5-target.HP].material.color = new THREE.Color('grey')
+					//	scene.remove(target.hpBars.shift())
 					target.HP--;
 					target.hitStart = time;
 					target.children[0].material.color = new THREE.Color('red');
@@ -267,7 +340,7 @@
 					}
 				}
 			}
-			else if (busters[i].obj.position.x > rightBound || busters[i].obj.position.x < leftBound) {
+			else if (busters[i].obj.position.x > rightBound+10 || busters[i].obj.position.x < leftBound-10) {
 				var id = busters.shift().obj.id;
 				scene.remove(scene.getObjectById(id));
 			}
@@ -297,7 +370,7 @@
 	
 	function newBuster(player) {
 		var geometry = new THREE.SphereGeometry(3);
-		var material = new THREE.MeshBasicMaterial({color: new THREE.Color(player.coreColor)});
+		var material = new THREE.MeshBasicMaterial({color: 0xffb366});
 		var mesh = new THREE.Mesh(geometry, material);
 		mesh.position.copy(player.position);
 		mesh.velocity = new THREE.Vector3((player.facingLeft?-350:350), 0, 0);
@@ -313,5 +386,6 @@
 		if (vol !== undefined) audio.volume = vol;
 		return audio;
 	}
+	
 	
 })();
