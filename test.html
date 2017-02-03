@@ -9,8 +9,10 @@
 		</style>
 	</head>
 	<body>
-		<audio autoplay>
+		<audio id="audio-background" autoplay>
 			<source src="audio/mmx2-zero-theme.mp3" type="audio/mpeg">
+		</audio>
+		<audio>
 		</audio>
 		<script src="scripts/three.min.js"></script>
 		<script>
@@ -27,7 +29,7 @@
 			var camera = new THREE.PerspectiveCamera( 70, window.innerWidth/window.innerHeight, 10, 300 );
 			camera.position.set( 0, 45, 100 );
 			var scene = new THREE.Scene();
-			scene.background = new THREE.Color(0x0f3066);
+			scene.background = new THREE.TextureLoader().load('images/background-x2.jpg');
 
 			var group = new THREE.Group();
 			var material;
@@ -46,6 +48,7 @@
 			target = new THREE.Mesh(geometry, material);
 			target.hitStart = null;
 			target.position.set(90, 6, 0);
+			target.HP = 3;
 			scene.add(target);
 			var velocity = new THREE.Vector3();
 			var up = false, down = false, left = false, right = false, canJump = true;
@@ -75,6 +78,10 @@
 							scene.add(projectile)
 						}
 						break;
+					case 'P':
+						var audio = document.getElementById('play');
+						if (audio.paused) audio.play();
+						else audio.pause();
 				}
 			})
 			document.addEventListener('keyup', function(e) {
@@ -114,6 +121,16 @@
 			geometry.vertices.push(new THREE.Vector3(-80, 80, 0));
 			objects.push(new THREE.Line(geometry, material));
 			scene.add(objects[objects.length-1]);
+			/*
+			geometry = new THREE.BoxGeometry(20, 20, 20);
+			material = new THREE.MeshBasicMaterial({color: new THREE.Color('yellow')});
+			var mesh = new THREE.Mesh(geometry, material);
+			mesh.position.set(-70, 10, 0);
+			mesh.HP = 1;
+			mesh.hitStart = null;
+			scene.add(mesh);
+			*/
+			mesh = null;
 			
 			fire = false;
 			var Ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 1, 6);
@@ -121,7 +138,6 @@
 			//
 			prevTime = performance.now();
 			render();
-			
 			function render() {
 				var time = performance.now();
 				var delta = (time - prevTime)/1000;
@@ -130,7 +146,7 @@
 				var intersected = Ray.intersectObjects(objects);
 				if (projectile !== null) {
 					fireRay.ray.origin.copy(projectile.position);
-					var victim = fireRay.intersectObject(target);
+					var victim = fireRay.intersectObjects(scene.children);
 					var hit = victim.length > 0 ? true : false;
 
 					if (projectile.position.x > 100 || projectile.position.x < -100) {
@@ -140,14 +156,23 @@
 					else if (hit) {
 						scene.remove(scene.getObjectById(projectile.id));
 						projectile = null;
-						victim[0].object.material.color = new THREE.Color('red')
-						victim[0].object.hitStart = performance.now();
+						if (victim[0].object.hitStart === null) {
+							victim[0].object.material.color = new THREE.Color('red')
+							victim[0].object.hitStart = performance.now();
+							victim[0].object.HP--;
+							if (victim[0].object.HP === 0) {
+								scene.remove(victim[0].object);
+							}
+						}
 					}
 					else projectile.translateX(projectile.velocity.x * delta);
 
 				}
 				
-				if (time - target.hitStart >= 1000) target.material.color = new THREE.Color('orange');
+				if (time - target.hitStart >= 1000) {
+					target.material.color = new THREE.Color('orange');
+					target.hitStart = null;
+				}
 				
 				velocity.x -= velocity.x * 6 * delta;	//	deceleration
 				velocity.y -= 50 * 10 * delta;	//	gravity
@@ -158,7 +183,7 @@
 					
 				} 
 				
-				if (canJump) {
+				if (true) {	//	deceleration in air
 					if (left) velocity.x -= delta * 500.0;
 					if (right) velocity.x += delta * 500.0;
 				}

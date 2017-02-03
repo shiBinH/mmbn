@@ -52,7 +52,7 @@
 		renderer.setSize( window.innerWidth, window.innerHeight );
 		document.body.appendChild( renderer.domElement );
 		
-		prevTime = performance.now();
+		mesh.moveStart = performance.now();
 		window.addEventListener( 'resize', onWindowResize, false );
 		
 	}
@@ -106,11 +106,11 @@
 	function animate() {
 		
 		var time = performance.now();
-		if (time - prevTime >= 160) {
-			if (moveLeft && mesh.position.x>-375) {mesh.translateX(-150);prevTime = time;}
-			else if (moveUp && mesh.position.y<150) {mesh.translateY(150); prevTime = time;}
-			else if (moveRight && mesh.position.x<-75) {mesh.translateX(150); prevTime = time;}
-			else if (moveDown && mesh.position.y>-150) {mesh.translateY(-150); prevTime = time;}
+		if (time - mesh.moveStart >= 160) {
+			if (moveLeft && mesh.position.x>-375) {mesh.translateX(-150); mesh.moveStart = time;}
+			else if (moveUp && mesh.position.y<150) {mesh.translateY(150); mesh.moveStart = time;}
+			else if (moveRight && mesh.position.x<-75) {mesh.translateX(150); mesh.moveStart = time;}
+			else if (moveDown && mesh.position.y>-150) {mesh.translateY(-150); mesh.moveStart = time;}
 
 		}
 		//	swivel the plane
