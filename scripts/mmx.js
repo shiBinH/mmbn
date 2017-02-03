@@ -15,7 +15,7 @@
 		var geometry, material, mesh;
 		
 		map = {};
-		dashSpeed = 400;
+		dashSpeed = 350;
 		sfx = {};
 		platforms = [];
 		player1 = new THREE.Group(), player2 = new THREE.Group();
@@ -25,9 +25,10 @@
 		//	sound effects
 		sfx["x-buster"] = newSFX('audio/x-buster.wav');
 		sfx["defeat"] = newSFX('audio/defeat.wav', 0.5);
-		sfx["jump"] = newSFX('audio/jump.wav');
+		sfx["jump"] = newSFX('audio/jump.wav', .5);
 		sfx["land"] = newSFX('audio/land.wav', .75);
 		sfx["hit"] = newSFX('audio/hit2.wav', .35);
+		sfx["dash"] = newSFX('audio/dash.wav');
 		
 		//	initiate camera, scene, renderer
 		camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 30, 500);
@@ -73,6 +74,7 @@
 		player1.dashStart = performance.now();
 		player1.dashJumping = false;
 		player1.dashable = true;
+		player1.dashJumpTimer = null;
 		scene.add(player1);
 		
 		material = new THREE.MeshBasicMaterial({color: 0x0066ff, wireframe: true})
@@ -147,6 +149,9 @@
 						player1.moving.right = true; player1.facingLeft = false; break;
 					case player1.controls.JUMP:
 						if (player1.canJump) {
+							if (player1.dashJumpTimer === null) player1.dashJumpTimer = performance.now();
+							else if (performance.now() - player1.dashJumpTimer < 100) player1.dashJump = true;
+							map[player1.controls.JUMP] = true;
 							player1.velocity.y += 350;	//	350
 							sfx['jump'].play();
 							player1.airborne = true;
@@ -157,20 +162,20 @@
 						player1.firing = true;
 						break;
 					case player1.controls.DASH:
-						if (player1.airborne) break;
-						if (player1.dashable && !player1.dashing) {
+						if (player1.airborne && performance.now()-player1.dashJumpTimer<50) {
+							sfx['dash'].play()
+							map[player1.controls.DASH] = true;
+							player1.dashing = true;
+							player1.dashable = false;
+						}
+						else if (!player1.airborne && player1.dashable && !player1.dashing) {
+							if (player1.dashJumpTimer === null) player1.dashJumpTimer = performance.now();
+							map[player1.controls.DASH] = true;
+							sfx['dash'].play()
 							player1.dashStart = performance.now();
 							player1.dashing = true;
 							player1.dashable = false;
 						}
-						/*
-						var time = performance.now();
-						if (time - player1.canDash >= 700) {
-							player1.velocity.x += Math.sign(player1.velocity.x) * dashSpeed;
-							player1.canDash = time;
-						}
-						break;
-						*/
 				}
 			}
 			if (player2.controls.ENABLED) {
@@ -209,9 +214,11 @@
 				case player1.controls.FIRE:
 					player1.firing = false;
 				case player1.controls.JUMP:
+					map[player1.controls.JUMP] = false;
 					if (player1.velocity.y > 0 ) player1.velocity.y = 0;
 					break;
 				case player1.controls.DASH:
+					map[player1.controls.DASH] = false;
 					player1.dashing = false;
 					player1.velocity.x = 0;
 					player1.dashable = true;
@@ -258,14 +265,15 @@
 					sfx['land'].play();
 					player.airborne = false;
 					player.dashJump = false;
+					player.dashJumpTimer = null;
 				}
 			}
 		}
 		
+		if (map[player.controls.JUMP] && map[player.controls.DASH]) player.dashJump = true;
 		if (player.moving.left) player.velocity.x = -Vx;
 		if (player.moving.right) player.velocity.x = Vx;
 		if (!player.moving.left && !player.moving.right && player.velocity.x!= 0) player.velocity.x = 0;
-		//if (player.dashJump && (player.moving.left||player.moving.right)) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
 		if  (player.dashJump) {
 			if (player.moving.left||player.moving.right) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
 			else player.velocity.x = 0;
@@ -273,7 +281,7 @@
 		else if (player.dashing) {
 			if (time - player.dashStart < 300) player.velocity.x = dashSpeed * (player.facingLeft?-1:1);
 			else {
-				if (player.moving.left || player.moving.right) player.velocity.x = (player.moving.left?-1:1)*Vx;
+				if (player.moving.left || player.moving.right) player.velocity.x = (player.facingLeft?-1:1)*Vx;
 				else player.velocity.x = 0;
 				player.dashing = false;	
 			}
@@ -293,6 +301,7 @@
 				sfx['land'].play();
 				player.airborne = false;
 				player.dashJump = false;
+				player.dashJumpTimer = null;
 			}
 		}
 		
