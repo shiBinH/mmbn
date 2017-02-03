@@ -7,14 +7,12 @@
 	var prevTime;
 	var sfx;
 	var dashSpeed;
-	var map;
 	
 	init();
 	
 	function init() {
 		var geometry, material, mesh;
 		
-		map = {};
 		dashSpeed = 300;
 		sfx = {};
 		platforms = [];
@@ -156,8 +154,7 @@
 					case player1.controls.JUMP:
 						if (player1.canJump) {
 							if (player1.dashJumpTimer === null) player1.dashJumpTimer = performance.now();
-							else if (performance.now() - player1.dashJumpTimer < 100) player1.dashJump = true;
-							map[player1.controls.JUMP] = true;
+							else if (performance.now() - player1.dashJumpTimer < 250) player1.dashJump = true;
 							player1.velocity.y += 350;	//	350
 							sfx['jump'].play();
 							player1.airborne = true;
@@ -170,13 +167,12 @@
 					case player1.controls.DASH:
 						if (player1.airborne && performance.now()-player1.dashJumpTimer<50) {
 							sfx['dash'].play()
-							map[player1.controls.DASH] = true;
+							player1.dashJump = true;
 							player1.dashing = true;
 							player1.dashable = false;
 						}
 						else if (!player1.airborne && player1.dashable && !player1.dashing) {
 							if (player1.dashJumpTimer === null) player1.dashJumpTimer = performance.now();
-							map[player1.controls.DASH] = true;
 							sfx['dash'].play()
 							player1.dashStart = performance.now();
 							player1.dashing = true;
@@ -193,12 +189,11 @@
 					case player2.controls.JUMP:
 						if (player2.canJump) {
 							if (player2.dashJumpTimer === null) player2.dashJumpTimer = performance.now();
-							else if (performance.now() - player2.dashJumpTimer < 100) player2.dashJump = true;
-							map[player2.controls.JUMP] = true;
+							else if (performance.now() - player2.dashJumpTimer < 250) player2.dashJump = true;
 							player2.velocity.y += 350;	//	350
 							sfx['jump'].play();
 							player2.airborne = true;
-							if (player2.dashing) player1.dashJump = true;
+							if (player2.dashing) player2.dashJump = true;
 						}
 						player2.canJump = false; break;
 					case player2.controls.FIRE:
@@ -207,13 +202,11 @@
 					case player2.controls.DASH:
 						if (player2.airborne && performance.now()-player2.dashJumpTimer<50) {
 							sfx['dash'].play()
-							map[player2.controls.DASH] = true;
-							player1.dashing = true;
-							player1.dashable = false;
+							player2.dashing = true;
+							player2.dashable = false;
 						}
 						else if (!player2.airborne && player2.dashable && !player2.dashing) {
 							if (player2.dashJumpTimer === null) player2.dashJumpTimer = performance.now();
-							map[player2.controls.DASH] = true;
 							sfx['dash'].play()
 							player2.dashStart = performance.now();
 							player2.dashing = true;
@@ -239,11 +232,10 @@
 				case player1.controls.FIRE:
 					player1.firing = false;
 				case player1.controls.JUMP:
-					map[player1.controls.JUMP] = false;
 					if (player1.velocity.y > 0 ) player1.velocity.y = 0;
 					break;
 				case player1.controls.DASH:
-					map[player1.controls.DASH] = false;
+					if (player1.dashJumpTimer === null) player1.dashJumpTimer = performance.now();
 					player1.dashing = false;
 					player1.velocity.x = 0;
 					player1.dashable = true;
@@ -257,11 +249,10 @@
 				case player2.controls.FIRE:
 					player2.firing = false;
 				case player2.controls.JUMP:
-					map[player2.controls.JUMP] = false;
 					if (player2.velocity.y > 0 ) player2.velocity.y = 0;
 					break;
 				case player2.controls.DASH:
-					map[player2.controls.DASH] = false;
+					if (player2.dashJumpTimer === null) player2.dashJumpTimer = performance.now();
 					player2.dashing = false;
 					player2.velocity.x = 0;
 					player2.dashable = true;
@@ -299,7 +290,6 @@
 			}
 		}
 		
-		if (map[player.controls.JUMP] && map[player.controls.DASH]) player.dashJump = true;
 		if (player.moving.left) player.velocity.x = -Vx;
 		if (player.moving.right) player.velocity.x = Vx;
 		if (!player.moving.left && !player.moving.right && player.velocity.x!= 0) player.velocity.x = 0;
