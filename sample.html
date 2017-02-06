@@ -11,76 +11,262 @@
 	<body>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 		<script src="scripts/three.min.js"></script>
+		<script src="scripts/OrbitControls.js"></script>
 		<script>
+			var geometry, material, mesh;
+			var map;
+			
 			// Our Javascript will go here.
-			var rotY = 0;
+			
+			map = {};
 			
 			//	camera, scene
 			var scene = new THREE.Scene();
 			scene.background = new THREE.Color(0x0f3066);
-			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000);
+			var camera = new THREE.PerspectiveCamera( 30, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+			//	var camera = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 500);
+			var gridHelper = new THREE.GridHelper(100, 10, 'blue')
+			gridHelper.rotateX(Math.PI/2)
+			scene.add(gridHelper)
+			gridHelper = new THREE.GridHelper(100, 10, 'blue');
+			gridHelper.translateX(-50);
+			gridHelper.rotateZ(-Math.PI/2)
+			scene.add(gridHelper)
+			var orbit = new THREE.OrbitControls( camera, renderer.domElement );
+			orbit.enableZoom = false;
+			
+			var ambient = new THREE.AmbientLight(new THREE.Color('white'), 0);
+			scene.add(ambient)
+			var directional = new THREE.DirectionalLight(0xffff00, 0);
+			//	directional.castShadow = true;
+			scene.add(directional)
+			var hemisphere = new THREE.HemisphereLight( new THREE.Color('white'), 1);
+			scene.add( hemisphere );
+			var point = new THREE.PointLight( new THREE.Color('white'), 1);
+			point.visible = false
+			point.castShadow = true;
+			point.position.set( 0, 0, 50 );
+			scene.add(point);
+
 			
 			//	add renderer
 			var renderer = new THREE.WebGLRenderer();
-			renderer.setSize( window.innerWidth*.9, window.innerHeight*.9 );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap
+			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 			
-			//	box
-			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			var material = new THREE.MeshBasicMaterial ( { color: 0x00ff00, wireframe: true } );
-			var cube = new THREE.Mesh( geometry, material );
-			scene.add( cube );
+			//	planes
+			geometry = new THREE.PlaneGeometry(100, 100, 0, 0)
+			material = new THREE.MeshStandardMaterial({color: new THREE.Color('white')});
+			var plane = new THREE.Mesh(geometry, material);
+			plane.receiveShadow = true;
+			scene.add(plane)
+			geometry = new THREE.PlaneGeometry(100, 100, 0, 0)
+			material = new THREE.MeshStandardMaterial({color: new THREE.Color('white')});
+			plane = new THREE.Mesh(geometry, material);
+			plane.receiveShadow = true;
+			plane.translateX(-50);
+			plane.rotateY(Math.PI/2)
+			scene.add(plane)
+
 			
-			camera.position.z = 10;
+			//	box
+			var texture = new THREE.TextureLoader().load( "images/circle.png" );
+			geometry = new THREE.CubeGeometry(10, 10, 10);
+			//	material = new THREE.MeshStandardMaterial({color: new THREE.Color('yellow')});
+			material = new THREE.MeshStandardMaterial({map: texture})
+			var box = new THREE.Mesh(geometry, material);
+			box.castShadow = true;
+			box.position.set(30, 30, 5)
+			scene.add(box);
+			
+			//	sphere
+			
+			//texture.wrapS = THREE.RepeatWrapping;
+			//texture.wrapT = THREE.RepeatWrapping;
+			//texture.repeat.set( 1, 1 );
+			geometry = new THREE.SphereGeometry( 2 );
+			material = new THREE.MeshLambertMaterial ({color: new THREE.Color('green')});
+			var main = new THREE.Mesh( geometry, material );
+			main.castShadow = true;
+			main.receiveShadow = true;
+			main.position.set(0, 0, 1)
+			scene.add( main );
+			
+			//	bones
+			var leg = new THREE.Bone();
+			var knee = new THREE.Bone();
+			var ankle = new THREE.Bone();
+			var foot = new THREE.Bone();
+			leg.add(knee) ; knee.add(ankle) ; ankle.add(foot);
+			
+			var bones1 = [leg, knee, ankle, foot];
+			var legSkeleton = new THREE.Skeleton(bones1);
+			//var bones1 = [start, middle, end];
+			
+			/*
+			start.add(middle);
+			middle.add(end);
+			start.position.y = 2;
+			end.position.y = -2;
+			var bones1 = [];
+			bones1.push(start); bones1.push(middle); bones1.push(end);
+			var legSkeleton = new THREE.Skeleton(bones1);
+			geometry = new THREE.CylinderGeometry(0.5, 0.5, 10, 9);
+			for (var i=0 ; i<geometry.vertices.length ; i++) {
+				if (i<geometry.vertices.length/2) {
+					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
+					geometry.skinWeights.push(new THREE.Vector4(.7, .3, 0, 0));
+				} else {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
+						geometry.skinWeights.push(new THREE.Vector4(0, 0.3, 0.7, 0));
+				}
+			}
+			material = new THREE.MeshStandardMaterial({skinning: true, color: 0x33adff});
+			mesh = new THREE.SkinnedMesh(geometry, material);
+			mesh.add(legSkeleton.bones[0]);
+			mesh.bind(legSkeleton);
+			mesh.position.z = 10;
+			mesh.castShadow = true;
+			mesh.rotateX(Math.PI/2)
+			scene.add(mesh)
+			
+			var helper = new THREE.SkeletonHelper( mesh );
+			helper.material.linewidth = 3;
+			scene.add( helper );
+			*/
+			
+			//	movement, action
 			
 			var prevTime = performance.now();
 			var movingLeft = false,
-					movingRight = false;
+					movingRight = false,
+					movingUp = false,
+					movingDown = false,
+					airborne = false;
 			var velocity = new THREE.Vector3();
 			
 			$(window).on('keydown', function(e) {
 				var key = e.keyCode;
+				//	console.log(key)
 				switch (key) {
-					case 65:
+					case 70:
 						movingLeft = true;
 						break;
-					case 68:
+					case 72:
 						movingRight = true;
 						break;
+					case 84:
+						movingUp = true; break;
+					case 71:
+						movingDown = true;
+						break;
+					case 90:
+						if (!airborne) {
+							velocity.z += 100;
+							airborne = true;
+						}
+						break;
+					case 192:
+						map[192] = true;
+						break;
+					case 81:
+						if (map[192]) ambient.intensity = Math.max (0, ambient.intensity-0.1)
+						else ambient.intensity = Math.min(3, ambient.intensity+0.1)
+						console.log("ambient: " + ambient.intensity.toFixed(1))
+						break;
+					case 87:
+						if (map[192]) directional.intensity = Math.max(0, directional.intensity-0.1)
+						else directional.intensity = Math.min(3, directional.intensity+0.1)
+						console.log("directional: " + directional.intensity.toFixed(1))
+						break;
+					case 50:
+						if (point.visible) point.visible = false;
+						else point.visible = true;
+						break;
+					case 49:
+						if (map[192]) hemisphere.intensity = Math.max(0, hemisphere.intensity-0.1);
+						else hemisphere.intensity = Math.min(3, hemisphere.intensity+0.1)
+						console.log('hemisphere: ' + hemisphere.intensity.toFixed(1))
 				}
 			})
-			
 			$(window).on('keyup', function(e) {
 				var key = e.keyCode;
 				switch (key) {
-					case 65:
+					case 70:
 						movingLeft = false;
+						velocity.x = 0;
 						break;
-					case 68:
+					case 72:
 						movingRight = false;
+						velocity.x = 0;
+						break;
+					case 84:
+						movingUp = false;
+						velocity.y = 0;
+						break;
+					case 71:
+						movingDown = false;
+						velocity.y = 0;
+						break;
+					case 90:
+						velocity.z = Math.min(velocity.z, 0)
+						break;
+					case 192:
+						map[192] = false;
 						break;
 				}
 			})
 			
-			console.log(geometry.faces)
+			var track = new THREE.VectorKeyframeTrack('', new Float32Array([
+				0, 2, 4, 6, 8
+			]), [
+				10, 10, 0, 20, 20, 0, 30, 30, 0, 40, 40, 0, 50, 50, 0
+			])
+			var clip = new THREE.AnimationClip('test', 10, [track]);
+			//	var mixer = new THREE.AnimationMixer();
+			//	var action = mixer.clipAction(clip)
+			//	action.play()
+			
 			
 			render();
 
 			function render() {
-				cube.rotation.x += Math.sign(Math.cos(rotY)) * 0.01;
-				rotY += 0.1;
+				var g = 300;
+				velocity.x = 20;
+				velocity.y = 20;
+				
+				camera.position.copy(main.position);
+				camera.position.z += 50;
+				camera.position.x += 50;
+				camera.position.y -= 50;
+				camera.up.set(0, 0, 1)
+				camera.lookAt(main.position);
 				
 				var time = performance.now();
 				var delta = (time - prevTime) / 1000;
 				
-				//	vf = vi - a*dt
-				//	a = 0.025 * vi
-				velocity.x -= velocity.x * 2.5 * delta;
+				if (movingLeft) velocity.x *= -1;
+				if (movingDown) velocity.y *= -1;
+				if (movingLeft || movingRight) {
+					main.translateX( velocity.x * delta);
+					main.translateY(velocity.x * delta)
+				}
+				if (movingDown || movingUp) {
+					main.translateY(velocity.y * delta);
+					main.translateX(velocity.y * -delta)
+				}
+			
+				velocity.z -= g * delta;
+				main.translateZ(velocity.z * delta)
+				if (main.position.z - 2 < 0) {
+					velocity.z = 0;
+					main.position.z = 2;
+					airborne = false;
+				}
 				
-				if (movingLeft) velocity.x -= 50.0 * delta;
-				if (movingRight) velocity.x += 50.0 * delta;
-				
-				cube.translateX( velocity.x * delta);
 				
 				prevTime = time;
 				

@@ -201,6 +201,7 @@
 						break;		
 					case player2.controls.DASH:
 						if (player2.airborne && performance.now()-player2.dashJumpTimer<50) {
+							player2.dashJump = true;
 							sfx['dash'].play()
 							player2.dashing = true;
 							player2.dashable = false;
@@ -218,7 +219,7 @@
 					var audio = document.getElementById('audio-background');
 					if (audio.paused) audio.play();
 					else audio.pause();
-				}
+			}
 		})
 		window.addEventListener('keyup', function(e) {
 			key = e.keyCode;

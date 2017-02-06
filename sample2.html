@@ -11,41 +11,111 @@
 	<body>
 		<script src="scripts/three.min.js"></script>
 		<script>
-			
+			var mesh, geometry, material;
 			var renderer = new THREE.WebGLRenderer();
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 			
-			var camera = new THREE.PerspectiveCamera( 45, window.innerWidth/window.innerHeight, 1, 500 );
-			camera.position.set( 0, 0, 100 );
-			camera.lookAt( new THREE.Vector3(0, 0, 0) );
+			var camera = new THREE.PerspectiveCamera( 40, window.innerWidth/window.innerHeight, 1, 500 );
+			camera.position.set( 20, 30, 50 );
+			camera.lookAt( new THREE.Vector3(0, 10, 0) );
+			
+			var axisHelper = new THREE.AxisHelper(30);
 			
 			
 			var scene = new THREE.Scene();
 			var group = new THREE.Group();
+			scene.add(axisHelper)
+			scene.background = new THREE.Color('white')
+			var hemisphere = new THREE.HemisphereLight(new THREE.Color('white'), 1);
+			scene.add(hemisphere)
+			var ambient = new THREE.AmbientLight(new THREE.Color('white'), 1);
+			scene.add(ambient)
 			
-			var material = new THREE.LineBasicMaterial({ color: 0xffffff });
-			var geometry = new THREE.Geometry();
-			geometry.vertices.push(new THREE.Vector3(-10, 0, 0));
-			geometry.vertices.push(new THREE.Vector3(0, 10, 0));
-			geometry.vertices.push(new THREE.Vector3(10, 0, 0));
-			var line = new THREE.Line(geometry, material);
-			line.position.set(20, 10, 0);
-			group.add( line );
+			var leg = new THREE.Bone();
+			var knee = new THREE.Bone();
+			var ankle = new THREE.Bone();
+			var foot = new THREE.Bone();
+			leg.add(knee) ; knee.add(ankle) ; ankle.add(foot);
+			leg.position.y = 10; knee.position.y = -7; ankle.position.y = -7; foot.position.y = -6;
+			var bones1 = [leg, knee, ankle, foot];
+			var legSkeleton = new THREE.Skeleton(bones1);
+			geometry = new THREE.CylinderGeometry(1, 1, 20, 10, 3);
+			for (var i=0 ; i<geometry.vertices.length ; i++) {
+				if (i<10 || i===40) {
+					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+					geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
+				} else if (i<20) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
+				} else if (i<30) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
+				} else {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 1))
+				}
+			}
+			material = new THREE.MeshStandardMaterial({skinning: true, color: 0x33adff});
+			mesh = new THREE.SkinnedMesh(geometry, material);
+			mesh.add(legSkeleton.bones[0]);
+			mesh.bind (legSkeleton);
+			mesh.position.set(-3, 10, 0)
+			mesh.skeleton.bones[2].rotation.x = -Math.PI/2
+			mesh.skeleton.bones[3].position.y += 4;
+			scene.add(mesh)
 			
-			geometry = new THREE.Geometry();
-			geometry.vertices.push(new THREE.Vector3(-10, -10, 0));
-			geometry.vertices.push(new THREE.Vector3(0, -20, 0));
-			geometry.vertices.push(new THREE.Vector3(10, -10, 0));
-			group.add (new THREE.Line(geometry, material));
+			leg = new THREE.Bone();
+			knee = new THREE.Bone();
+			ankle = new THREE.Bone();
+			foot = new THREE.Bone();
+			leg.add(knee) ; knee.add(ankle) ; ankle.add(foot);
+			leg.position.y = 10; knee.position.y = -7; ankle.position.y = -7; foot.position.y = -6;
+			var bones1 = [leg, knee, ankle, foot];
+			var legSkeleton = new THREE.Skeleton(bones1);
+			geometry = new THREE.CylinderGeometry(1, 1, 20, 10, 3);
+			for (var i=0 ; i<geometry.vertices.length ; i++) {
+				if (i<10 || i===40) {
+					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+					geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
+				} else if (i<20) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
+				} else if (i<30) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
+				} else {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 1))
+				}
+			}
+			material = new THREE.MeshStandardMaterial({skinning: true, color: 0x33adff});
+			mesh = new THREE.SkinnedMesh(geometry, material);
+			mesh.add(legSkeleton.bones[0]);
+			mesh.bind (legSkeleton);
+			mesh.position.set(3, 10, 0)
+			mesh.skeleton.bones[2].rotation.x = -Math.PI/2
+			mesh.skeleton.bones[3].position.y += 4;
+			scene.add(mesh)
 			
-			scene.add(group);
-			scene.background = new THREE.Color(0x0f3066);
-			renderer.render(scene, camera);
+			var pelvis = new THREE.Bone();
+			var body = new THREE.Bone();
+			var head = new THREE.Bone();
+			body.add(pelvis); body.add(head);
+			
+			
+			var helper = new THREE.SkeletonHelper( mesh );
+			helper.material.linewidth = 3;
+			scene.add( helper );
+
+
+			
 			
 			render();
 			function render() {
-				group.rotateY(0.01)
+				helper.update()
+				if (mesh.skeleton.bones[0].rotation.x>Math.PI/-2) mesh.skeleton.bones[0].rotateX(-.005)
+				else if (mesh.skeleton.bones[1].rotation.x<Math.PI*2/3)mesh.skeleton.bones[1].rotateX(0.005)
 				renderer.render(scene, camera);
 				requestAnimationFrame(render);
 			}
