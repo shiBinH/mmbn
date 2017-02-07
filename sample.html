@@ -33,8 +33,7 @@
 			gridHelper.translateX(-50);
 			gridHelper.rotateZ(-Math.PI/2)
 			scene.add(gridHelper)
-			var orbit = new THREE.OrbitControls( camera, renderer.domElement );
-			orbit.enableZoom = false;
+			
 			
 			var ambient = new THREE.AmbientLight(new THREE.Color('white'), 0);
 			scene.add(ambient)
@@ -92,7 +91,9 @@
 			var main = new THREE.Mesh( geometry, material );
 			main.castShadow = true;
 			main.receiveShadow = true;
-			main.position.set(0, 0, 1)
+			main.position.set(5, 5, 1)
+			main.quaternion = new THREE.Quaternion(0, 0, 1, 0)
+			
 			scene.add( main );
 			
 			//	bones
@@ -106,7 +107,7 @@
 			var legSkeleton = new THREE.Skeleton(bones1);
 			//var bones1 = [start, middle, end];
 			
-			/*
+
 			start.add(middle);
 			middle.add(end);
 			start.position.y = 2;
@@ -136,7 +137,7 @@
 			var helper = new THREE.SkeletonHelper( mesh );
 			helper.material.linewidth = 3;
 			scene.add( helper );
-			*/
+
 			
 			//	movement, action
 			
@@ -220,15 +221,23 @@
 				}
 			})
 			
-			var track = new THREE.VectorKeyframeTrack('', new Float32Array([
+			var track = new THREE.QuaternionKeyframeTrack('cube.quaternion', new Float32Array([
 				0, 2, 4, 6, 8
 			]), [
-				10, 10, 0, 20, 20, 0, 30, 30, 0, 40, 40, 0, 50, 50, 0
+				0, 0, 0, 1, 0, 0, 1/Math.sqrt(2), 1/Math.sqrt(2), 0, 0, 1, 0, 0, 0, 1/Math.sqrt(2), -1/Math.sqrt(2), 0, 0, 0, -1
 			])
-			var clip = new THREE.AnimationClip('test', 10, [track]);
-			//	var mixer = new THREE.AnimationMixer();
-			//	var action = mixer.clipAction(clip)
-			//	action.play()
+			var track2 = new THREE.NumberKeyframeTrack('rotation.z', new Float32Array([
+				0, 2, 4, 6, 8
+			]), [
+				0, Math.PI/2, Math.PI, Math.PI*3/2, Math.PI*2
+			])
+			var clip = new THREE.AnimationClip('test', 8, [track]);
+			var mixer = new THREE.AnimationMixer(box);
+			var action = mixer.clipAction(clip)
+			//	action.zeroSlopeAtStart = action.zeroSlopeAtEnd = false;
+			//	action.setLoop(THREE.LoopPingPong, 0)
+			console.log(mixer)
+			action.play()
 			
 			
 			render();
@@ -247,6 +256,8 @@
 				
 				var time = performance.now();
 				var delta = (time - prevTime) / 1000;
+				
+				mixer.update(delta)
 				
 				if (movingLeft) velocity.x *= -1;
 				if (movingDown) velocity.y *= -1;
