@@ -15,39 +15,221 @@
 	<body>
 
 		<script src="scripts/three.min.js"></script>
-
+		<script src="scripts/ColladaLoader.js"></script>
 		<script>
 
 			var camera, scene, renderer;
 			var mesh;
+			var skeletonHelper;
+			var prevTime;
+			var body;
+			var colladaLoader;
 
 			init();
 			animate();
 
 			function init() {
-
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
-				camera.position.z = 400;
-
+				prevTime = performance.now();
+				var geometry, material;
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.set (0, -10, 150)
 				scene = new THREE.Scene();
-
-				var texture = new THREE.TextureLoader().load( 'images/screw-logo.jpg' );
-
-				var geometry = new THREE.BoxBufferGeometry( 200, 200, 200 );
-				var material = new THREE.MeshBasicMaterial( { map: texture } );
-
-				mesh = new THREE.Mesh( geometry, material );
-				scene.add( mesh );
-
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				document.body.appendChild( renderer.domElement );
+				var axisHelper = new THREE.AxisHelper('10');
+				//scene.add(new THREE.AmbientLight('white', 1.0))
+				//scene.add(new THREE.HemisphereLight('white', 1.5))
+				var directional = new THREE.DirectionalLight('', 1);
+				directional.position.z += 3;
+				scene.add(directional)
+				//	scene.add(axisHelper)
+				
+				geometry = new THREE.Geometry();
+				geometry.vertices.push(new THREE.Vector3(-100, -50, 0));
+				geometry.vertices.push(new THREE.Vector3(100, -50, 0));
+				geometry.vertices.push(new THREE.Vector3(100, 50, 0));
+				material = new THREE.LineBasicMaterial();
+				mesh = new THREE.Line(geometry, material);
+				scene.add( mesh );
+				
+				material = new THREE.MeshBasicMaterial({color: 0x0040ff, wireframe: true})
+				geometry = new THREE.SphereGeometry(10);
+				mesh = new THREE.Mesh(geometry, material);
+				scene.add(mesh)
+				mesh.position.set(-20, 0, 0)
+				
+				
+				
+			/***	***/
+				var l1, l2, l3, l4, l5, l6, l7, l8;
+				l1 = 5, l2 = 7;
+				l3 = 4, l4 = 4, l5 = 8;
+				l6 = 5, l7 = 10, l8 = 5;
+				var bones, skeleton;
+				body = new THREE.Bone(), head = new THREE.Bone(), pelvis = new THREE.Bone(),
+						r_shoulder = new THREE.Bone(), r_elbow = new THREE.Bone(), r_hand = new THREE.Bone(),
+						l_shoulder = new THREE.Bone(), l_elbow = new THREE.Bone(), l_hand = new THREE.Bone(),
+						r_leg = new THREE.Bone(), r_knee = new THREE.Bone(), r_ankle = new THREE.Bone(), r_foot = new THREE.Bone(),
+						l_leg = new THREE.Bone(), l_knee = new THREE.Bone(), l_ankle = new THREE.Bone(), l_foot = new THREE.Bone();
+				
+				body.add(head); body.add(pelvis);
+				body.position.y += (l1+l2)/2 - l1; head.position.y = l1; pelvis.position.y = -l2;
+				material = new THREE.MeshStandardMaterial({skinning:true, wireframe:false, color: 0x0099ff});
+				geometry = new THREE.CylinderGeometry(.5, .5, l1+l2, 10, 12);
+				for (var i=0 ; i<geometry.vertices.length ; i++) {
+					if (i<10 || i===130) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0));
+					} else if (i<60) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0));
+					} else if (i>=120) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0));
+					} else {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 0));
+					}
+				}
+				bones = [body, head, pelvis];
+				skeleton = new THREE.Skeleton(bones)
+				mesh = new THREE.SkinnedMesh(geometry, material);
+				mesh.add(skeleton.bones[0])
+				mesh.bind(skeleton);
+				scene.add(mesh);
 
-				//
+				r_shoulder.add(r_elbow); r_elbow.add(r_hand);
+				r_shoulder.position.y += (l4+l5)/2;r_elbow.position.y = -l4; r_hand.position.y = -l5;
+				geometry = new THREE.CylinderGeometry(.5, .5, l4+l5, 10, 3);
+				for (var i=0 ; i<geometry.vertices.length ; i++) {
+					if (i<10 || i===40) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0));
+					} else if (i<20) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0));
+					} else {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0));
+					}
+				}
+				bones = [r_shoulder, r_elbow, r_hand];
+				skeleton = new THREE.Skeleton(bones);
+				mesh = new THREE.SkinnedMesh(geometry, material);
+				mesh.add(skeleton.bones[0])
+				mesh.bind(skeleton);
+				scene.add(mesh)
+				body.add(bones[0]); 
+				bones[0].position.x = -l3; 
+				
+				l_shoulder.add(l_elbow); l_elbow.add(l_hand);
+				l_shoulder.position.y += (l4+l5)/2; l_elbow.position.y = -l4; l_hand.position.y = -l5
+				geometry = geometry.clone(true);
+				bones = [l_shoulder, l_elbow, l_hand];
+				skeleton = new THREE.Skeleton(bones);
+				mesh = new THREE.SkinnedMesh(geometry, material);
+				mesh.add(skeleton.bones[0])
+				mesh.bind(skeleton);
+				scene.add(mesh)
+				body.add(bones[0]);
+				bones[0].position.x = l3;
+				
+				r_leg.add(r_knee); r_knee.add(r_ankle); r_ankle.add(r_foot);
+				r_leg.position.y += (l6+l7+l8)/2; r_knee.position.y = -l6; r_ankle.position.y =  -l7; r_foot.position.y = -l8;
+				geometry = new THREE.CylinderGeometry(.5, .5, 20, 10, 4);
+				for (var i=0 ; i<geometry.vertices.length ; i++) {
+					if (i<10 || i===50) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
+						geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0));
+					} else if (i>=10 && i<30) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
+						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0));
+					} else if (i<40) {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0));
+					} else {
+						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
+						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 1));
+					}
+				}
+				bones = [r_leg, r_knee, r_ankle, r_foot];
+				skeleton = new THREE.Skeleton(bones);
+				mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial({skinning: true, color: 0x0099ff}));
+				mesh.add(skeleton.bones[0]);
+				mesh.bind(skeleton);
+				scene.add(mesh)
+				pelvis.add(bones[0]); 
+				r_leg.position.y = 0;
+				r_knee.position.x = -4;
+				skeletonHelper = new THREE.SkeletonHelper(mesh);
+				skeletonHelper.material.linewidth = 3;
+				scene.add(skeletonHelper);
+
+				l_leg.add(l_knee); l_knee.add(l_ankle); l_ankle.add(l_foot);
+				l_leg.position.y += (l6+l7+l8)/2; l_knee.position.y = -l6; l_ankle.position.y = -l7; l_foot.position.y = -l8;
+				geometry = geometry.clone(true);
+				bones = [l_leg, l_knee, l_ankle, l_foot];
+				skeleton = new THREE.Skeleton(bones);
+				mesh = new THREE.SkinnedMesh(geometry, material);
+				mesh.add(bones[0]);
+				mesh.bind(skeleton);
+				scene.add(mesh);
+				pelvis.add(bones[0]); 
+				l_leg.position.y = 0;
+				l_knee.position.x = 4;
+				
+				r_shoulder.rotateZ(Math.PI/-8)
+				r_shoulder.position.y -= 6; 
+				l_shoulder.rotateZ(Math.PI/8)
+				l_shoulder.position.y -= 6;
+				r_elbow.rotateZ(Math.PI/8)
+
+				r_ankle.rotateX(Math.PI/-2.5)
+				l_ankle.rotateX(Math.PI/-2.5)
+				r_shoulder.rotateX(Math.PI/-6)
+				r_elbow.rotateX(Math.PI/-3)
+				l_shoulder.rotateX(Math.PI/6)
+				l_elbow.rotateX(Math.PI/-3)
+				
+				var forearm;
+				colladaLoader = new THREE.ColladaLoader();
+				colladaLoader.load(
+					// resource URL
+					'collada/collection.dae',
+					// Function when resource is loaded
+					function ( collada ) {
+						console.log(collada)
+						geometry = collada.dae.geometries["Buster-mesh"].mesh.geometry3js;
+						forearm = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({color: 0x0047b3, emissive: 0x003d99}));
+						l_elbow.add(forearm);
+
+						forearm.rotateX(Math.PI/2)
+						var r_forearm = forearm.clone(true);
+						forearm.position.y -= 4.5;
+						forearm.scale.set(2, 2, 3.5)
+						
+						r_forearm.position.y -= 4;
+						r_forearm.scale.set(1.5, 1.5, 3.5)
+						r_elbow.add(r_forearm)
+						
+						geometry = collada.dae.geometries["head-mesh"].mesh.geometry3js;
+						mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
+						mesh.rotateY(Math.PI)
+						mesh.scale.set(3, 3, 3)
+						head.add(mesh)
+					},
+					// Function called when download progresses
+					function ( xhr ) {
+						console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+					}
+				);
+				
+				
 
 				window.addEventListener( 'resize', onWindowResize, false );
-
+				renderer.render( scene, camera );
 			}
 
 			function onWindowResize() {
@@ -60,14 +242,15 @@
 			}
 
 			function animate() {
-
-				requestAnimationFrame( animate );
-
-				mesh.rotation.x += 0.005;
-				mesh.rotation.y += 0.01;
-
+				var time = performance.now();
+				var delta = (time - prevTime)/1000;
+				body.rotateY(0.01)
+				
+				skeletonHelper.update()
+				prevTime = time;
 				renderer.render( scene, camera );
-
+				requestAnimationFrame( animate );
+				
 			}
 
 		</script>

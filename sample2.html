@@ -19,10 +19,10 @@
 			
 			var camera = new THREE.PerspectiveCamera( 40, window.innerWidth/window.innerHeight, 1, 500 );
 			//camera.position.set( 30, 10, 5 );
-			camera.position.set(20, 30, 30)
-			camera.lookAt( new THREE.Vector3(0, -20, 0) );
+			camera.position.set(30, 30, 30)
+			camera.lookAt( new THREE.Vector3(0, 0, 0) );
 			
-			var axisHelper = new THREE.AxisHelper(30);
+			var axisHelper = new THREE.AxisHelper(20);
 			
 			var scene = new THREE.Scene();
 			var group = new THREE.Group();
@@ -32,155 +32,38 @@
 			scene.add(hemisphere)
 			var ambient = new THREE.AmbientLight(new THREE.Color('white'), 1);
 			scene.add(ambient)
-			/*
-			var leg = new THREE.Bone();
-			var knee = new THREE.Bone();
-			var ankle = new THREE.Bone();
-			var foot = new THREE.Bone();
-			leg.add(knee) ; knee.add(ankle) ; ankle.add(foot);
-			leg.position.y = 10; knee.position.y = -7; ankle.position.y = -7; foot.position.y = -6;
-			var bones1 = [leg, knee, ankle, foot];
-			var legSkeleton = new THREE.Skeleton(bones1);
-			geometry = new THREE.CylinderGeometry(1, 1, 20, 10, 3);
-			for (var i=0 ; i<geometry.vertices.length ; i++) {
-				if (i<10 || i===40) {
-					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-					geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
-				} else if (i<20) {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
-				} else if (i<30) {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
-				} else {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 1))
-				}
-			}
-			material = new THREE.MeshStandardMaterial({skinning: true, color: 0x33adff});
-			mesh = new THREE.SkinnedMesh(geometry, material);
-			mesh.add(legSkeleton.bones[0]);
-			mesh.bind (legSkeleton);
-			mesh.position.set(-3, 10, 0)
-			mesh.skeleton.bones[2].rotation.x = -Math.PI/2
-			mesh.skeleton.bones[3].position.y += 4;
-			scene.add(mesh)
+			var anchor = new THREE.Group();
+			anchor.add(camera);
+			scene.add(anchor)
 			
-			leg = new THREE.Bone();
-			knee = new THREE.Bone();
-			ankle = new THREE.Bone();
-			foot = new THREE.Bone();
-			leg.add(knee) ; knee.add(ankle) ; ankle.add(foot);
-			leg.position.y = 10; knee.position.y = -7; ankle.position.y = -7; foot.position.y = -6;
-			var bones1 = [leg, knee, ankle, foot];
-			var legSkeleton = new THREE.Skeleton(bones1);
-			geometry = new THREE.CylinderGeometry(1, 1, 20, 10, 3);
-			for (var i=0 ; i<geometry.vertices.length ; i++) {
-				if (i<10 || i===40) {
-					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-					geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
-				} else if (i<20) {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
-				} else if (i<30) {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
-				} else {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 1))
-				}
-			}
-			material = new THREE.MeshStandardMaterial({skinning: true, color: 0x33adff});
-			mesh = new THREE.SkinnedMesh(geometry, material);
-			mesh.add(legSkeleton.bones[0]);
-			mesh.bind (legSkeleton);
-			mesh.position.set(3, 10, 0)
-			mesh.skeleton.bones[2].rotation.x = -Math.PI/2
-			mesh.skeleton.bones[3].position.y += 4;
-			scene.add(mesh)
-			*/
-			var pelvis = new THREE.Bone();
-			var body = new THREE.Bone();
-			var head = new THREE.Bone();
-			body.add(pelvis); body.add(head);
-			pelvis.position.y = -10; head.position.y = 5;
-			var rightLeg = new THREE.Bone();
-			var knee = new THREE.Bone();
-			var ankle = new THREE.Bone();
-			var foot = new THREE.Bone();
-			rightLeg.add(knee); knee.add(ankle); ankle.add(foot);
-			knee.position.y = -7; ankle.position.y = -7; foot.position.y = -7;
-			var leftLeg = rightLeg.clone(true);
-			pelvis.add(rightLeg); pelvis.add(leftLeg);
-			rightLeg.position.set(-1, -1, 0); leftLeg.position.set(1, -1, 0);
-			var rightShoulder = new THREE.Bone();
-			var elbow = new THREE.Bone();
-			var hand = new THREE.Bone();
-			rightShoulder.add(elbow); elbow.add(hand);
-			elbow.position.y = -5; hand.position.y = -5;
-			var leftShoulder = rightShoulder.clone(true);
-			body.add(leftShoulder); body.add(rightShoulder);
-			rightShoulder.position.x = -2; leftShoulder.position.x = 2;
-			var bones = [body, head, pelvis, 
-									rightShoulder, leftShoulder, 
-									rightLeg, leftLeg];
-			var skeleton = new THREE.Skeleton(bones);
 			
 
-			geometry = new THREE.SphereGeometry(25);
-			for (var i=0 ; i<geometry.vertices.length ; i++) {
-				geometry.skinIndices.push(new THREE.Vector4(0, 0, 0, 0));
-				geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0));
-			}
-			material = new THREE.MeshBasicMaterial({color: new THREE.Color('yellow'), skinning: true, wireframe: true, visible: false})
-			mesh = new THREE.SkinnedMesh(geometry, material)
-			mesh.add(skeleton.bones[0]);
-			mesh.bind(skeleton)
+			geometry = new THREE.Geometry();
+			geometry.vertices.push(
+				new THREE.Vector3(0, 0, 0), 
+				new THREE.Vector3(5, 0, 0),
+				new THREE.Vector3(5, 0, 5),
+				new THREE.Vector3(0, 0, 5),
+				new THREE.Vector3(2.5, 5, 2.5)
+			)
+			geometry.faces.push(new THREE.Face3(0, 1, 2),
+													new THREE.Face3(0, 3, 2),
+													new THREE.Face3(4, 0, 1),
+													new THREE.Face3(4, 2, 1),
+													new THREE.Face3(4, 2, 3),
+													new THREE.Face3(4, 3, 0)
+												 );
+			geometry.computeFaceNormals()
+			mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({color: new THREE.Color('yellow'), side: THREE.DoubleSide}))
 			scene.add(mesh)
-			var helper = new THREE.SkeletonHelper( mesh );
-			helper.material.linewidth = 3;
-			scene.add( helper );
-			console.log(mesh.toJSON())
-
-
-			var legSkeleton = new THREE.Skeleton([rightLeg, knee, ankle, foot]);
-			geometry = new THREE.CylinderGeometry(.5, .5, 21, 10, 3);
-			for (var i=0 ; i<geometry.vertices.length ; i++) {
-				if (i<10 || i==40) {
-					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
-					geometry.skinWeights.push(new THREE.Vector4(1, 0, 0, 0));
-				} else if (i<20) {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
-						geometry.skinWeights.push(new THREE.Vector4(0, 1, 0, 0));
-				} else if (i<30) {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
-						geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0));
-				} else {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 3));
-						geometry.skinWeights.push(new THREE.Vector4(0, 0, 0, 1));
-				}
-			}
-			material = new THREE.MeshStandardMaterial({color: 0x33adff, skinning: true})
-			mesh = new THREE.SkinnedMesh(geometry, material);
-			mesh.position.set(-1, -11+(-21/2), 0)
-
-			//mesh.add(legSkeleton.bones[0])
-			mesh.bind(legSkeleton);
-			scene.add(mesh)
-			legSkeleton.bones[1].translateX(-0.5)
-			legSkeleton.bones[1].position.y += 3;
-			legSkeleton.bones[1].rotateX(Math.PI/4)
-			legSkeleton.bones[2].rotateX(-Math.PI/2)
-			legSkeleton.bones[3].position.y += 5;
 			prevTime = performance.now();
 
 
 			render();
 			function render() {
-				skeleton.bones[5].rotateX(-0.01)
+				anchor.rotateY(0.001)
 				var time = performance.now();
 				var delta = (time - prevTime)/1000
-				helper.update()
 				prevTime = time;
 				renderer.render(scene, camera);
 				requestAnimationFrame(render);

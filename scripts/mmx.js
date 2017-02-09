@@ -32,8 +32,8 @@
 		sfx["dash"] = newSFX('audio/dash.wav');
 		
 		//	initiate camera, scene, renderer
-		//	camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 30, 500);
-		camera = new THREE.OrthographicCamera(-250, 250, 200, -200, 30, 500)
+		camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 30, 500);
+		//	camera = new THREE.OrthographicCamera(-250, 250, 200, -200, 30, 500)
 		camera.position.set(0, 100, 200);
 		scene = new THREE.Scene();
 		scene.background = new THREE.TextureLoader().load('images/background-x2.jpg');
@@ -269,136 +269,15 @@
 		})
 		
 	/****** MEGAMAN ******/
-		var bones;
-		var body = new THREE.Bone(), pelvis = new THREE.Bone(), head = new THREE.Bone();
-		body.add(head); body.add(pelvis);
-		body.position.y = 15; head.position.y = 5; pelvis.position.y = -15;
-		var rightShoulder = new THREE.Bone(), elbow = new THREE.Bone(), hand = new THREE.Bone();
-		rightShoulder.add(elbow); elbow.add(hand);
-		elbow.position.y = -8; hand.position.y = -8;
-		var leftShoulder = rightShoulder.clone(true);
-		body.add(rightShoulder); body.add(leftShoulder);
-		rightShoulder.position.x = -6; leftShoulder.position.x = 6;
-		var rightLeg = new THREE.Bone(), knee = new THREE.Bone(), ankle = new THREE.Bone(), foot = new THREE.Bone();
-		rightLeg.add(knee); knee.add(ankle); ankle.add(foot);
-		knee.position.y = -10; ankle.position.y = -10; foot.position.y = -10;
-		var leftLeg = rightLeg.clone(true);
-		pelvis.add(rightLeg); pelvis.add(leftLeg);
-		rightLeg.position.set(-5, -1, 0), leftLeg.position.set(5, -1, 0);
-		bones = [body, head, pelvis, 
-						rightShoulder, elbow, hand,
-						leftShoulder, leftShoulder.children[0], leftShoulder.children[0].children[0],
-						rightLeg, knee, ankle, foot,
-						leftLeg, leftLeg.children[0], leftLeg.children[0].children[0], leftLeg.children[0].children[0].children[0]];
-		var skeleton = new THREE.Skeleton(bones)
-		var skin = new THREE.MeshBasicMaterial({color: 0x33adff, wireframe: true, skinning: true, visible: false})
-		var testGeo = new THREE.SphereGeometry(25);
-		for (var i=0 ; i<testGeo.vertices.length ; i++) {
-			testGeo.skinIndices.push(new THREE.Vector4(0, 0, 0, 0));
-			testGeo.skinWeights.push(new THREE.Vector4(0, 0, 0, 0));
-		}
-		skinMesh = new THREE.SkinnedMesh(testGeo, skin);
-		skinMesh.add(skeleton.bones[0]);
-		skinMesh.bind(skeleton);
-		//	player1.add(skinMesh)
 		
-		//	bone skin
-		var cylinder, covering, skele;
-		covering = new THREE.MeshStandardMaterial({color: 0x4271f4, skinning: true});
-		cylinder = new THREE.CylinderGeometry(2, 2, 20, 10, 4);
-		for (var i=0 ; i<cylinder.vertices.length ; i++) {
-			if (i<10 || i===50) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-				cylinder.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
-			} else if (i<20) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
-			} else if (i>=40) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
-			}
-		}
-		mesh = new THREE.SkinnedMesh(cylinder, covering);
-		mesh.position.set(0, 10, 0)
-		skele = new THREE.Skeleton([skeleton.bones[1], skeleton.bones[0], skeleton.bones[2]]);
-		mesh.bind(skele);
-		scene.add(mesh);
 		
-		cylinder = new THREE.CylinderGeometry(1, 1, 16, 10, 2);
-		for (var i=0 ; i<cylinder.vertices.length ; i++) {
-			if (i<10 || i===30) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-				cylinder.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
-			} else if (i<20) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
-			} else {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
-			}
-		}
-		mesh = new THREE.SkinnedMesh(cylinder, covering);
-		mesh.position.set(-6, 15-8, 0);
-		skele = new THREE.Skeleton([skeleton.bones[3], skeleton.bones[4], skeleton.bones[5]]);
-		mesh.bind(skele)
-		scene.add(mesh)
-		mesh = mesh.clone(true);
-		mesh.position.set(6, 15-8, 0);
-		skele = new THREE.Skeleton([skeleton.bones[6], skeleton.bones[7], skeleton.bones[8]])
-		mesh.bind(skele);
-		scene.add(mesh)
 		
-		cylinder = new THREE.CylinderGeometry(1, 1, 30, 10, 3);
-		for (var i=0 ; i<cylinder.vertices.length ; i++) {
-			if (i<10 || i===40) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-				cylinder.skinWeights.push(new THREE.Vector4(1, 0, 0, 0))
-			} else if (i<20) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 1, 0, 0))
-			} else if (i<30) {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 0, 1, 0))
-			} else {
-				cylinder.skinIndices.push(new THREE.Vector4(0, 1, 2, 3))
-				cylinder.skinWeights.push(new THREE.Vector4(0, 0, 0, 1))
-			}
-		}
-		mesh = new THREE.SkinnedMesh(cylinder, covering)
-		mesh.position.set(-5, -1-15, 0);
-		skele = new THREE.Skeleton([skeleton.bones[9], skeleton.bones[10], skeleton.bones[11], skeleton.bones[12]]);
-		mesh.bind(skele);
-		scene.add(mesh);
-		mesh = mesh.clone(true);
-		mesh.position.set(5, -1-15, 0);
-		skele = new THREE.Skeleton([skeleton.bones[13], skeleton.bones[14], skeleton.bones[15], skeleton.bones[16]]);
-		mesh.bind(skele);
-		scene.add(mesh)
-		
-		//	bone positioning
-		skinMesh.rotateY(Math.PI/2.5)
-		skeleton.bones[3].rotateX(Math.PI/4)
-		skeleton.bones[4].position.x = -4;
-		skeleton.bones[4].rotateX(-Math.PI/2.5)
-		skeleton.bones[6].rotateX(Math.PI/-2)
-		//	skeleton.bones[7].rotateX(-Math.PI/2)
-		skeleton.bones[9].rotateY(Math.PI/-4)
-		skeleton.bones[9].rotateZ(Math.PI/-6)
-		skeleton.bones[10].rotateX(Math.PI/-8)
-		skeleton.bones[11].rotateY(Math.PI/-4)
-		skeleton.bones[13].rotateX(Math.PI/-6)
-		skeleton.bones[14].position.x = 2;
-		skeleton.bones[14].rotateX(Math.PI/6)
-		
-		skeleton.bones[11].rotateX(Math.PI/-2.5); skeleton.bones[15].rotateX(Math.PI/-2.5); 
-		skeleton.bones[12].position.y += 3; skeleton.bones[16].position.y += 3;
-		
-		scene.add(skinMesh)
 		//	helper
+		/*
 		helper = new THREE.SkeletonHelper( skinMesh );
 		helper.material.linewidth = 3;
 		scene.add( helper );
-		
+		*/
 
 	/****** ******/
 		
@@ -527,7 +406,7 @@
 	
 	function animate() {
 		var time = performance.now();
-		helper.update((time - prevTime)/1000)
+		//	helper.update((time - prevTime)/1000)
 		updateProjectiles(player1, time);
 		updatePlayer(player1, time);
 		updateProjectiles(player2, time);
