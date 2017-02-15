@@ -1,0 +1,83 @@
+if (!this.A) this.A = {};
+
+(function() {
+	var stop_right = [[0,0.4338837391175581,0,0.9009688679024191],[0,0.25881904510252074,0,0.9659258262890683],[0,0,0,1],[0.24999999999999997,-0.06698729810778066,-0.24999999999999997,0.9330127018922194],[-0.49999999999999994,0,0,0.8660254037844387],[0,0,0,1],[0.15450849718747373,-0.024471741852423214,0.15450849718747373,0.9755282581475768],[-0.7071067811865475,0,0,0.7071067811865476],[0,0,0,1],[0,0,-0.3090169943749474,0.9510565162951535],[0,-0.49999999999999994,0,0.8660254037844387],[0.49999999999999994,0,0,0.8660254037844387],[-0.2461515398476327,0.0799794819839436,0.2984874903271172,0.9186500530726803],[0.24999999999999997,0.06698729810778066,-0.24999999999999997,0.9330127018922194],[0,0,0,1]]
+	var stop_left = [[0,-0.4338837391175581,0,0.9009688679024191],[0,-0.25881904510252074,0,0.9659258262890683],[0,0,0,1],[0.15450849718747373,0.024471741852423214,-0.15450849718747373,0.9755282581475768],[-0.7071067811865475,0,0,0.7071067811865476],[0,0,0,1],[0.24999999999999997,0.06698729810778066,0.24999999999999997,0.9330127018922194],[-0.49999999999999994,0,0,0.8660254037844387],[0,0,0,1],[-0.2461515398476327,-0.0799794819839436,-0.2984874903271172,0.9186500530726803],[0.24999999999999997,-0.06698729810778066,0.24999999999999997,0.9330127018922194],[0,0,0,1],[0,0,0.3090169943749474,0.9510565162951535],[0,0.49999999999999994,0,0.8660254037844387],[0.49999999999999994,0,0,0.8660254037844387]];
+	
+	var run_left = [[0.13031984034841237,-0.6530070692790725,0.11545727689442083,0.7370672451650865,0.13031984034841237,-0.6530070692790725,0.11545727689442083,0.7370672451650865, 0.13031984034841237,-0.6530070692790725,0.11545727689442083,0.7370672451650865, 0.13031984034841237,-0.6530070692790725,0.11545727689442083,0.7370672451650865, 0.13031984034841237,-0.6530070692790725,0.11545727689442083,0.7370672451650865],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[-0.24740395925452355,0,0,0.9689124217106473,-0.5226872289306597,0,0,0.8525245220595062,0.19866933079506133,0,0,0.9800665778412434,0.6051864057360402,0,0,0.7960837985490566,-0.24740395925452355,0,0,0.9689124217106473],[-0.6200216599150927,0.07790890635617037,0.09733443098443206,0.7746156157033378,-0.5805321493137691,0.07294684650827599,0.10110661070956568,0.8046357153820977,-0.5037298929077002,0.02003012612538008,-0.014451424350547169,0.8635080459224694,-0.4794255386042037,0,0,0.8775825618903742,-0.6200216599150927,0.07790890635617037,0.09733443098443206,0.7746156157033378],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[0.1986693307950613,0,0,0.9800665778412432,0.6051864057360401,0,0,0.7960837985490564,-0.24740395925452335,0,0,0.9689124217106471,-0.5226872289306596,0,0,0.8525245220595061,0.1986693307950613,0,0,0.9800665778412432],[-0.43761141144779003,-0.021056658793866898,0.01290994728094928,0.8988249011639129,-0.4794255386042033,0,0,0.8775825618903731,-0.6200216599150917,-0.07790890635617026,-0.09733443098443195,0.7746156157033368,-0.5186090492355627,-0.06516589091079346,-0.10628826749213763,0.8458728420432411,-0.43761141144779003,-0.021056658793866898,0.01290994728094928,0.8988249011639129],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[-0.26942823739112526,0.03385504196657864,-0.11999010491752578,0.954916035969465,0.36341474892936393,-0.0456649299101361,-0.1160107896748402,0.9232474918005114,-0.43157178827032355,0.05422921199708092,-0.11226300241332111,0.8934215144177385,-0.40910371779599985,0.05140598353305019,-0.1135835111346599,0.9039305055925567,-0.26942823739112526,0.03385504196657864,-0.11999010491752578,0.954916035969465],[0,0,0,1,0.14943813247359927,0,0,0.9887710779360425,0.7173560908995238,0,0,0.6967067093471664,0,0,0,1,0,0,0,1],[0,0,0,1,0.3428978074554515,0,0,0.9393727128473791,0.3428978074554515,0,0,0.9393727128473791,0,0,0,1,0,0,0,1],[-0.47568490101325556,-0.05977225120354832,0.1094123719272075,0.8707353707087674,-0.41232078174342496,0,0,0.9110387329540339,-0.27154693695611304,0,0,0.9624251976282384,0.29321445966851056,0.03684390297544993,0.11910632207491449,0.9478826359294841,-0.47568490101325556,-0.05977225120354832,0.1094123719272075,0.8707353707087674],[0.7675435022360281,0,0,0.640996858163326,0,0,0,1,0,0,0,1,0.22310636213174553,0,0,0.9747941070689435,0.7675435022360281,0,0,0.640996858163326],[0.3428978074554515,0,0,0.9393727128473791,0,0,0,1,0,0,0,1,0.3428978074554515,0,0,0.9393727128473791,0.3428978074554515,0,0,0.9393727128473791]]
+	var run_right = [[0.127392986257586,0.6712277769412297,-0.11867885501927103,0.7205134474013842,0.13031984034841232,0.6530070692790723,-0.11545727689442083,0.7370672451650861,0.1303198403484124,0.6530070692790726,-0.11545727689442092,0.7370672451650868,0.127392986257586,0.6712277769412297,-0.11867885501927103,0.7205134474013842,0.127392986257586,0.6712277769412297,-0.11867885501927103,0.7205134474013842],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[-0.24740395925452355,0,0,0.9689124217106473,-0.5226872289306597,0,0,0.8525245220595062,0.19866933079506133,0,0,0.9800665778412434,0.6051864057360402,0,0,0.7960837985490566,-0.24740395925452355,0,0,0.9689124217106473],[-0.6200216599150927,0.07790890635617037,0.09733443098443206,0.7746156157033378,-0.5805321493137691,0.07294684650827599,0.10110661070956568,0.8046357153820977,-0.5037298929077002,0.02003012612538008,-0.014451424350547169,0.8635080459224694,-0.4794255386042037,0,0,0.8775825618903742,-0.6200216599150927,0.07790890635617037,0.09733443098443206,0.7746156157033378],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[0.1986693307950613,0,0,0.9800665778412432,0.6051864057360401,0,0,0.7960837985490564,-0.24740395925452335,0,0,0.9689124217106471,-0.5226872289306596,0,0,0.8525245220595061,0.1986693307950613,0,0,0.9800665778412432],[-0.43761141144779003,-0.021056658793866898,0.01290994728094928,0.8988249011639129,-0.4794255386042033,0,0,0.8775825618903731,-0.6200216599150917,-0.07790890635617026,-0.09733443098443195,0.7746156157033368,-0.5186090492355627,-0.06516589091079346,-0.10628826749213763,0.8458728420432411,-0.43761141144779003,-0.021056658793866898,0.01290994728094928,0.8988249011639129],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[-0.26942823739112526,0.03385504196657864,-0.11999010491752578,0.954916035969465,0.36341474892936393,-0.0456649299101361,-0.1160107896748402,0.9232474918005114,-0.43157178827032355,0.05422921199708092,-0.11226300241332111,0.8934215144177385,-0.40910371779599985,0.05140598353305019,-0.1135835111346599,0.9039305055925567,-0.26942823739112526,0.03385504196657864,-0.11999010491752578,0.954916035969465],[0,0,0,1,0.14943813247359927,0,0,0.9887710779360425,0.7173560908995238,0,0,0.6967067093471664,0,0,0,1,0,0,0,1],[0,0,0,1,0.3428978074554515,0,0,0.9393727128473791,0.3428978074554515,0,0,0.9393727128473791,0,0,0,1,0,0,0,1],[-0.47568490101325556,-0.05977225120354832,0.1094123719272075,0.8707353707087674,-0.41232078174342496,0,0,0.9110387329540339,-0.27154693695611304,0,0,0.9624251976282384,0.29321445966851056,0.03684390297544993,0.11910632207491449,0.9478826359294841,-0.47568490101325556,-0.05977225120354832,0.1094123719272075,0.8707353707087674],[0.7675435022360281,0,0,0.640996858163326,0,0,0,1,0,0,0,1,0.22310636213174553,0,0,0.9747941070689435,0.7675435022360281,0,0,0.640996858163326],[0.3428978074554515,0,0,0.9393727128473791,0,0,0,1,0,0,0,1,0.3428978074554515,0,0,0.9393727128473791,0.3428978074554515,0,0,0.9393727128473791]]
+	
+	A.x = {
+		stop_right: new THREE.AnimationClip('stop_right', 0.1, [
+			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0], stop_right[0]),
+			new THREE.QuaternionKeyframeTrack('group:body:head.quaternion', [0],stop_right[1]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis.quaternion', [0],stop_right[2]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder.quaternion', [0],stop_right[3]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow.quaternion', [0],stop_right[4]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow:r_hand.quaternion', [0],stop_right[5]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder.quaternion', [0],stop_right[6]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow.quaternion', [0],stop_right[7]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow:l_hand.quaternion', [0],stop_right[8]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg.quaternion', [0],stop_right[9]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee.quaternion', [0],stop_right[10]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee:r_ankle.quaternion',[0],stop_right[11]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg.quaternion', [0],stop_right[12]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee.quaternion', [0],stop_right[13]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee:l_ankle.quaternion', [0],stop_right[14])
+		]),
+		stop_left: new THREE.AnimationClip('stop_left', 0.1, [
+			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0], stop_left[0]),
+			new THREE.QuaternionKeyframeTrack('group:body:head.quaternion', [0],stop_left[1]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis.quaternion', [0],stop_left[2]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder.quaternion', [0],stop_left[3]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow.quaternion', [0],stop_left[4]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow:r_hand.quaternion', [0],stop_left[5]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder.quaternion', [0],stop_left[6]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow.quaternion', [0],stop_left[7]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow:l_hand.quaternion', [0],stop_left[8]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg.quaternion', [0],stop_left[9]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee.quaternion', [0],stop_left[10]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee:r_ankle.quaternion',[0],stop_left[11]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg.quaternion', [0],stop_left[12]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee.quaternion', [0],stop_left[13]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee:l_ankle.quaternion', [0],stop_left[14])
+		]),
+		run_right: new THREE.AnimationClip('run_right', .5, [
+			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[0]),
+			new THREE.QuaternionKeyframeTrack('group:body:head.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[1]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[2]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[3]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[4]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow:r_hand.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[5]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[6]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[7]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow:l_hand.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[8]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:r_leg.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[9]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:r_leg:r_knee.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[10]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:r_leg:r_knee:r_ankle.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[11]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:l_leg.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[12]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:l_leg:l_knee.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_right[13]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:l_leg:l_knee:l_ankle.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5],run_right[14] )
+		]),
+		run_left: new THREE.AnimationClip('run_left', .5, [
+			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[0]),
+			new THREE.QuaternionKeyframeTrack('group:body:head.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[1]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[2]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[3]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[4]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow:r_hand.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[5]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[6]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[7]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow:l_hand.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[8]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:r_leg.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[9]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:r_leg:r_knee.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[10]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:r_leg:r_knee:r_ankle.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[11]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:l_leg.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[12]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:l_leg:l_knee.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[13]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis:l_leg:l_knee:l_ankle.quaternion', [0, .5/4, .5/4*2, .5/4*3, .5], run_left[14])
+		])
+		
+	}
+})();
+																			 
+

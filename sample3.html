@@ -24,6 +24,7 @@
 			var prevTime;
 			var body;
 			var colladaLoader;
+			var done;
 
 			init();
 			animate();
@@ -32,17 +33,18 @@
 				prevTime = performance.now();
 				var geometry, material;
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-				camera.position.set (0, -10, 150)
+				camera.position.set (0, -10, 100)
 				scene = new THREE.Scene();
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				document.body.appendChild( renderer.domElement );
 				var axisHelper = new THREE.AxisHelper('10');
-				//scene.add(new THREE.AmbientLight('white', 1.0))
-				//scene.add(new THREE.HemisphereLight('white', 1.5))
-				var directional = new THREE.DirectionalLight('', 1);
-				directional.position.z += 3;
+				//	scene.add(new THREE.AmbientLight('white', 1.0))
+				//	scene.add(new THREE.HemisphereLight('white', 1.5))
+				var directional = new THREE.DirectionalLight('', 1.5);
+				//	directional.position.x += 3;
+				directional.position.z += 5;
 				scene.add(directional)
 				//	scene.add(axisHelper)
 				
@@ -184,14 +186,16 @@
 				r_shoulder.position.y -= 6; 
 				l_shoulder.rotateZ(Math.PI/8)
 				l_shoulder.position.y -= 6;
-				r_elbow.rotateZ(Math.PI/8)
+				//r_elbow.rotateZ(Math.PI/8)
 
-				r_ankle.rotateX(Math.PI/-2.5)
-				l_ankle.rotateX(Math.PI/-2.5)
+				r_ankle.rotateX(Math.PI/-2)
+				l_ankle.rotateX(Math.PI/-2)
+				/*
 				r_shoulder.rotateX(Math.PI/-6)
 				r_elbow.rotateX(Math.PI/-3)
 				l_shoulder.rotateX(Math.PI/6)
 				l_elbow.rotateX(Math.PI/-3)
+				*/
 				
 				var forearm;
 				colladaLoader = new THREE.ColladaLoader();
@@ -201,24 +205,39 @@
 					// Function when resource is loaded
 					function ( collada ) {
 						console.log(collada)
-						geometry = collada.dae.geometries["Buster-mesh"].mesh.geometry3js;
-						forearm = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({color: 0x0047b3, emissive: 0x003d99}));
-						l_elbow.add(forearm);
-
-						forearm.rotateX(Math.PI/2)
-						var r_forearm = forearm.clone(true);
-						forearm.position.y -= 4.5;
-						forearm.scale.set(2, 2, 3.5)
+						mesh = collada.scene.children[4];
+						mesh.position.y -= 5
+						mesh.scale.multiplyScalar(3.5);
+						mesh.rotateX(Math.PI/-2)
+						r_knee.add(mesh)
+						l_knee.add(mesh.clone(true))
 						
-						r_forearm.position.y -= 4;
-						r_forearm.scale.set(1.5, 1.5, 3.5)
-						r_elbow.add(r_forearm)
+						mesh = collada.scene.children[3];
+						mesh.scale.multiplyScalar(4);
+						mesh.position.z -= 1.5;
+						mesh.position.y -= 2.2;
+						r_ankle.add(mesh);
+						l_ankle.add(mesh.clone(true))
 						
-						geometry = collada.dae.geometries["head-mesh"].mesh.geometry3js;
-						mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
-						mesh.rotateY(Math.PI)
-						mesh.scale.set(3, 3, 3)
+						mesh = collada.scene.children[2];
+						mesh.scale.multiplyScalar(4.5);
+						mesh.rotateX(Math.PI/-2)
 						head.add(mesh)
+						
+						mesh = collada.scene.children[1];
+						mesh.scale.multiplyScalar(4.5);
+						mesh.rotateX(Math.PI/-2);
+						mesh.position.y -= 6;
+						body.add(mesh)
+						
+						mesh = collada.scene.children[0];
+						mesh.scale.multiplyScalar(5);
+						mesh.rotateX(Math.PI/-2);
+						mesh.position.y -= 5;
+						r_elbow.add(mesh)
+
+
+
 					},
 					// Function called when download progresses
 					function ( xhr ) {
@@ -244,7 +263,7 @@
 			function animate() {
 				var time = performance.now();
 				var delta = (time - prevTime)/1000;
-				body.rotateY(0.01)
+				body.rotateY(0.005)
 				
 				skeletonHelper.update()
 				prevTime = time;

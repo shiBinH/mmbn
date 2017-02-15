@@ -11,7 +11,6 @@
 	<body>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 		<script src="scripts/three.min.js"></script>
-		<script src="scripts/OrbitControls.js"></script>
 		<script>
 			var geometry, material, mesh;
 			var map;
@@ -71,7 +70,13 @@
 			scene.add(plane)
 
 			
-			//	box
+			//	objects
+			var group = new THREE.Group();
+			group.name = 'level1';
+			var obj = new THREE.Object3D();
+			obj.name = 'level2';
+			group.add(obj);
+			group.n = 0;
 			var texture = new THREE.TextureLoader().load( "images/circle.png" );
 			geometry = new THREE.CubeGeometry(10, 10, 10);
 			//	material = new THREE.MeshStandardMaterial({color: new THREE.Color('yellow')});
@@ -79,67 +84,22 @@
 			var box = new THREE.Mesh(geometry, material);
 			box.castShadow = true;
 			box.position.set(30, 30, 5)
-			scene.add(box);
+			box.name = 'level3';
+			box.n = 0;
+			obj.add(box);
+			scene.add(group);
 			
 			//	sphere
 			
-			//texture.wrapS = THREE.RepeatWrapping;
-			//texture.wrapT = THREE.RepeatWrapping;
-			//texture.repeat.set( 1, 1 );
 			geometry = new THREE.SphereGeometry( 2 );
 			material = new THREE.MeshLambertMaterial ({color: new THREE.Color('green')});
 			var main = new THREE.Mesh( geometry, material );
 			main.castShadow = true;
 			main.receiveShadow = true;
-			main.position.set(5, 5, 1)
-			main.quaternion = new THREE.Quaternion(0, 0, 1, 0)
+			main.n = 00;
 			
 			scene.add( main );
 			
-			//	bones
-			var leg = new THREE.Bone();
-			var knee = new THREE.Bone();
-			var ankle = new THREE.Bone();
-			var foot = new THREE.Bone();
-			leg.add(knee) ; knee.add(ankle) ; ankle.add(foot);
-			
-			var bones1 = [leg, knee, ankle, foot];
-			var legSkeleton = new THREE.Skeleton(bones1);
-			//var bones1 = [start, middle, end];
-			
-			/*
-			start.add(middle);
-			middle.add(end);
-			start.position.y = 2;
-			end.position.y = -2;
-			var bones1 = [];
-			bones1.push(start); bones1.push(middle); bones1.push(end);
-			var legSkeleton = new THREE.Skeleton(bones1);
-			geometry = new THREE.CylinderGeometry(0.5, 0.5, 10, 9);
-			for (var i=0 ; i<geometry.vertices.length ; i++) {
-				if (i<geometry.vertices.length/2) {
-					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-					geometry.skinWeights.push(new THREE.Vector4(.7, .3, 0, 0));
-				} else {
-						geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0))
-						geometry.skinWeights.push(new THREE.Vector4(0, 0.3, 0.7, 0));
-				}
-			}
-			material = new THREE.MeshStandardMaterial({skinning: true, color: 0x33adff});
-			mesh = new THREE.SkinnedMesh(geometry, material);
-			mesh.add(legSkeleton.bones[0]);
-			mesh.bind(legSkeleton);
-			mesh.position.z = 10;
-			mesh.castShadow = true;
-			mesh.rotateX(Math.PI/2)
-			scene.add(mesh)
-			
-			var helper = new THREE.SkeletonHelper( mesh );
-			helper.material.linewidth = 3;
-			scene.add( helper );
-			*/
-			
-			//	movement, action
 			
 			var prevTime = performance.now();
 			var movingLeft = false,
@@ -220,19 +180,18 @@
 						break;
 				}
 			})
-			
-			var track = new THREE.QuaternionKeyframeTrack('cube.quaternion', new Float32Array([
-				0, 2, 4, 6, 8
+			var track = new THREE.QuaternionKeyframeTrack('scene/level1/level2/level3.quaternion', new Float32Array([
+				3, 6
 			]), [
-				0, 0, 0, 1, 0, 0, 1/Math.sqrt(2), 1/Math.sqrt(2), 0, 0, 1, 0, 0, 0, 1/Math.sqrt(2), -1/Math.sqrt(2), 0, 0, 0, -1
+				/*0, 0, 0, 1, 0, 0, 1/Math.sqrt(2), 1/Math.sqrt(2), 0, 0, 1, 0,*/ 0, 0, 1/Math.sqrt(2), -1/Math.sqrt(2), 0, 0, 0, -1
 			])
-			var track2 = new THREE.NumberKeyframeTrack('rotation.z', new Float32Array([
+			var track2 = new THREE.NumberKeyframeTrack('scene/lvel1.n', new Float32Array([
 				0, 2, 4, 6, 8
 			]), [
 				0, Math.PI/2, Math.PI, Math.PI*3/2, Math.PI*2
 			])
-			var clip = new THREE.AnimationClip('test', 8, [track]);
-			var mixer = new THREE.AnimationMixer(box);
+			var clip = new THREE.AnimationClip('test', 6, [track, track2]);
+			var mixer = new THREE.AnimationMixer(group);
 			var action = mixer.clipAction(clip)
 			//	action.zeroSlopeAtStart = action.zeroSlopeAtEnd = false;
 			//	action.setLoop(THREE.LoopPingPong, 0)
@@ -246,6 +205,7 @@
 				var g = 300;
 				velocity.x = 20;
 				velocity.y = 20;
+				console.log(group.n)
 				
 				camera.position.copy(main.position);
 				camera.position.z += 50;

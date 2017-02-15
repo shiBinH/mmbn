@@ -280,7 +280,6 @@
 		*/
 
 	/****** ******/
-		
 		//	initiate
 		prevTime = performance.now();
 		renderer.render(scene, camera);
@@ -289,8 +288,6 @@
 	
 	function updatePlayer(player, time) {
 		var g = 1100;	//	980
-		var deceleration = 10;
-		var acceleration = 1500;
 		var delta = (time - prevTime)/1000;
 		var Vx = 150;
 		
@@ -407,6 +404,7 @@
 	function animate() {
 		var time = performance.now();
 		//	helper.update((time - prevTime)/1000)
+
 		updateProjectiles(player1, time);
 		updatePlayer(player1, time);
 		updateProjectiles(player2, time);
