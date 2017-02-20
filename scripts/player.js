@@ -1,20 +1,79 @@
 
 function Player(controls) {
+	
 	var loaded = false;
 	var group = new THREE.Group();
+	var keyDownFNS = [];
+
 	group.velocity = new THREE.Vector3();
+	group.controls = controls;
+	group.castShadow = true;
+	group.bounds = {
+		rightUp: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, 1, 0), 0, 13),
+		leftUp: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, 1, 0), 0, 13),
+		midRight: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), 0, 12),
+		midLeft: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 12),
+		botRight: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), 0, 12),
+		botLeft: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 12),
+		rightFoot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 13),
+		leftFoot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 13)
+	}
+	group.bounds.rightFoot.y = 33;
+	group.bounds.leftFoot.y = 33;
 	group.user = {
 		airborne: false,
+		onWall: false,
 		left: false,
-		controls: controls
+		dashing: false,
+		can_dash: true,
+		dashJ: false,
+		clock: new THREE.Clock(),
+		can_jump: true,
+		isAirborne: function(scene) {
+			group.bounds.rightFoot.ray.origin.copy(group.position);
+			group.bounds.rightFoot.ray.origin.x += 9;
+			group.bounds.rightFoot.ray.origin.y += -20
+			var intersections = group.bounds.rightFoot.intersectObjects(scene.children);
+			for (var obj=0 ; obj<intersections.length ; obj++) {
+				if (intersections[obj].object.purpose === 'surface' && group.velocity.y<=0) return false;
+			}
+			group.bounds.leftFoot.ray.origin.copy(group.position);
+			group.bounds.leftFoot.ray.origin.x += -9;
+			group.bounds.leftFoot.ray.origin.y += -20
+			var intersections = group.bounds.leftFoot.intersectObjects(scene.children);
+			for (var obj=0 ; obj<intersections.length ; obj++) {
+				if (intersections[obj].object.purpose === 'surface' && group.velocity.y<=0) return false;
+			}
+			return true;
+		},
+		dash_prev: 0,
+		latch_time: 0,
+		wJump_cast: null,
+		can_wJump: false,
+		wJump_timer: 0,
+		sliding: false
 	}
+	/*
+	group.keyup = function(key) {
+		keyDownFNS[key]();
+	}
+	*/
+
 	var clips = {};
 
 	var lengths = {
-		l1: 5, l2: 7,	//	neck, body
-		l3: 4, l4: 6, l5: 6,	//	shoulder, arm, forearm
+		l1: 5, l2: 7.5,	//	neck, body
+		l3: 4.5, l4: 6, l5: 6,	//	shoulder, arm, forearm
 		l6: 5, l7: 10	//	knee, shin
 	};
+	var offsets = {
+		jump: 2*-1.45,
+		fall: 2*-1.35,
+		run: 2*-1.5,
+		shoot_stand: 2*1.6,
+		dash: 2*1.5,
+		slide: 2*-1.60
+	}
 	var bones = [];
 	for (var i=0 ; i<15 ; i++) bones.push(new THREE.Bone());
 	var loader = new THREE.ColladaLoader();
@@ -25,14 +84,35 @@ function Player(controls) {
 			mesh.scale.multiplyScalar(2);
 			bones[1].add(mesh)
 			
+
 			mesh = collada.scene.children[3];
 			mesh.scale.multiplyScalar(2);
 			mesh.translateZ(-5)
-			bones[4].add(mesh)
+			var clone = bones[3].clone(true);
+			clone.children[0].add(mesh)
+			clone.visible = false;
+			clone.children[1].material = new THREE.MeshStandardMaterial({color: 0x00A3FF});
+			clone.children[1].position.y = -6;
+			clone.name = 'clone'
+			clone.timer = new THREE.Clock();
+			bones[0].add(clone)	
+/*
+			mesh = collada.scene.children[3];
+			mesh.scale.multiplyScalar(2);
+			mesh.translateZ(-5)
+			//bones[4].add(mesh)
+			var clone = bones[6].clone(true);
+			clone.children[0].add(mesh)
+			clone.visible = false;
+			clone.children[1].material = new THREE.MeshStandardMaterial({color: 0x00A3FF});
+			clone.children[1].position.y = -6;
+			clone.name = 'clone'
+			clone.timer = new THREE.Clock();
+			bones[0].add(clone)	*/
 			
 			mesh = collada.scene.children[0];
 			mesh.scale.multiplyScalar(2)
-			mesh.translateZ(-4)
+			mesh.translateZ(-3.5)
 			bones[0].add(mesh)
 			
 			mesh = collada.scene.children[0]
@@ -59,42 +139,114 @@ function Player(controls) {
 			clips['stop_left'] = clip;
 			action = mixer.clipAction(clip);
 			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
-			clip = A.x.run_right;
-			clips['run_right'] = clip;
+			clip = A.x.run;
+			clips['run'] = clip;
 			action = mixer.clipAction(clip);
 			action.setLoop(THREE.LoopRepeat); action.clampWhenFinished = true;
-			clip = A.x.run_left;
-			clips['run_left'] = clip;
+			clip = A.x.jump;
+			clips['jump'] = clip;
 			action = mixer.clipAction(clip);
-			action.setLoop(THREE.LoopRepeat); action.clampWhenFinished = true;
+			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
+			clip = A.x.fall
+			clips['fall'] = clip;
+			action = mixer.clipAction(clip);
+			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
+			clip = A.x.shoot_stand;
+			clips['shoot_stand'] = clip;
+			action = mixer.clipAction(clip);
+			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = false;
+			clip = A.x.dash;
+			clips['dash'] = clip;
+			action = mixer.clipAction(clip)
+			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
+			clip = A.x.slide;
+			clips['slide'] = clip;
+			action = mixer.clipAction(clip)
+			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
+			clip = A.x.j1;
+			clips['j1'] = clip;
+			action = mixer.clipAction(clip);
+			action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
+
 			
 			group.animation = {
 				update: function(delta) {
 					mixer.update(delta)
+					if (!mixer.existingAction(clips['dash']).isRunning()) group.bones.body.position.y = 0;
+					var arm_buster = group.bones.body.getObjectByName('clone');
+					clone.rotation.x = (Math.PI/-2)
+					clone.rotation.y = group.bones.body.rotation.z-.05
+					if (group.user.sliding || mixer.existingAction(clips['stop_left']).isRunning()) clone.rotation.z = .92 + -Math.PI/2
+					else clone.rotation.z = -group.bones.body.rotation.y + Math.PI/2
+					if (clone.timer.getElapsedTime()>.4) {
+						clone.visible = false;
+						group.bones.r_shoulder.visible = true;
+					}
+				},
+				turn_right: function() {
+					group.rotation.y = 0;
+				},
+				turn_left: function() {
+					if (group.velocity.y <= 0) group.rotation.y = offsets.fall;
+					if (group.user.airborne) group.rotation.y = offsets.jump;
+					if (group.user.onWall) group.rotation.y = offsets.slide;
 				},
 				stop_right: function() {
+					group.rotation.y = 0;
 					mixer.stopAllAction();
 					action = mixer.existingAction(clips['stop_right']);
 					action.play();
 					action.reset();
 				},
 				stop_left: function() {
+					group.rotation.y = 0;
 					mixer.stopAllAction();
 					action = mixer.existingAction(clips['stop_left']);
 					action.play();
 					action.reset();
 				},
-				run_right: function() {
-					action = mixer.existingAction(clips['run_right']);
+				run: function() {
+					group.rotation.y = group.user.left ? offsets.run : 0;
+					action = mixer.existingAction(clips['run']);
+					if (action.isRunning() || group.user.airborne) return;
+					mixer.stopAllAction();
+					action.play(); action.reset();
+				},
+				jump: function() {
+					group.rotation.y = group.user.left ? offsets.jump : 0;
+					action = mixer.existingAction(clips['jump']);
+					mixer.stopAllAction();
+					action.play(); action.reset();
+				},
+				fall: function() {
+					group.rotation.y = group.user.left? offsets.fall : 0;
+					action = mixer.existingAction(clips['fall']);
+					mixer.stopAllAction();
+					action.play(); action.reset();
+				},
+				fire: function() {
+					group.bones.r_shoulder.visible = false;
+					clone = group.bones.body.getObjectByName('clone');
+					clone.visible = true;
+					clone.timer.start();
+				},
+				dash: function() {
+					group.rotation.y = (group.user.left ? offsets.dash : 0);
+					action = mixer.existingAction(clips['dash']);
 					if (action.isRunning()) return;
 					mixer.stopAllAction();
 					action.play(); action.reset();
-				}, 
-				run_left: function() {
-					action = mixer.existingAction(clips['run_left']);
+				},
+				slide: function() {
+					action = mixer.existingAction(clips['slide']);
 					if (action.isRunning()) return;
 					mixer.stopAllAction();
-					action.play(); action.reset();
+					action.play(); action.reset()
+				},
+				j1: function() {
+					action = mixer.existingAction(clips['j1']);
+					mixer.stopAllAction();
+					action.play(); action.reset()
 				}
 			}
 		}
@@ -136,7 +288,8 @@ function Player(controls) {
 	mesh.add(bones[3])
 	mesh.bind(skeleton);
 	bones[3].position.x = -lengths.l3;
-	group.add(mesh);
+	//	group.add(mesh);
+	bones[3].add(mesh)
 	bones[0].add(bones[3]);
 
 	bones[6].add(bones[7]); bones[7].add(bones[8]);
@@ -149,7 +302,8 @@ function Player(controls) {
 	mesh.add(bones[6]);
 	mesh.bind(skeleton);
 	bones[6].position.x = lengths.l3;
-	group.add(mesh)
+	//group.add(mesh)
+	bones[6].add(mesh)
 	bones[0].add(bones[6])
 
 	bones[9].add(bones[10]); bones[10].add(bones[11]);
@@ -173,7 +327,8 @@ function Player(controls) {
 	skeleton = new THREE.Skeleton([bones[9], bones[10], bones[11]]);
 	mesh.add(bones[9]);
 	mesh.bind(skeleton);
-	group.add(mesh);
+	//group.add(mesh);
+	bones[9].add(mesh)
 	bones[2].add(bones[9]);
 	bones[9].position.y = 0;
 	
@@ -187,7 +342,8 @@ function Player(controls) {
 	skeleton = new THREE.Skeleton([bones[12], bones[13], bones[14]]);
 	mesh.add(bones[12]);
 	mesh.bind(skeleton);
-	group.add(mesh);
+	//group.add(mesh);
+	bones[12].add(mesh)
 	bones[2].add(bones[12]);
 	bones[12].position.y = 0;
 
