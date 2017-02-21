@@ -1,11 +1,11 @@
 (function() {
 	
 	var camera, scene, renderer;
-	var floor, leftBound, rightBound;
 	var player1, player2;
 	var clock;
 	var keysMap;
 	var sfx;
+	var objects;
 	
 	init();
 	animate();
@@ -13,11 +13,10 @@
 	function init() {
 		var geometry, material, mesh,
 				gridhelper, axis;
-		//	player1 = new Player(); player2 = new Player();
-		floor = 0; leftBound = -200; rightBound = 200;
 		clock = new THREE.Clock();
 		keysMap = {};
 		sfx = {};
+		objects = [];
 		
 		//	sound effects
 		sfx["x-buster"] = newSFX('audio/x-buster.wav', .5);
@@ -26,19 +25,20 @@
 		sfx["land"] = newSFX('audio/land.wav', .75);
 		sfx["hit"] = newSFX('audio/hit2.wav', .35);
 		sfx["dash"] = newSFX('audio/dash.wav');
+		sfx['dash_wJump'] = newSFX('audio/dash_wJump.wav', .08);
 		
 		scene = new THREE.Scene();
+		scene.bounds = {left: -1000, right: 1000};
 		scene.background = new THREE.TextureLoader().load('images/background-x2.jpg');
 		var directional = new THREE.DirectionalLight('white', 1);
 		directional.position.set(0, 100, 20)
-		directional.layers.enable(1)
 		scene.add(directional)
 		var hemisphere = new THREE.HemisphereLight('white', 1);
 		hemisphere.position.set(0, 200, 0)
 		scene.add(hemisphere)
 		
 		//camera = new THREE.OrthographicCamera(-300, 300, 150, -150, 30, 500)
-		camera= new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 30, 500)
+		camera= new THREE.PerspectiveCamera(90, window.innerWidth/window.innerHeight, 30, 500)
 		//camera.position.set(0, 0, 300)
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
 		
@@ -56,41 +56,50 @@
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.position.y -= 400/2;
 		mesh.purpose = 'surface';
-		scene.add(mesh)
+		scene.add(mesh); objects.push(mesh);
 		geometry = new THREE.BoxGeometry(80, 300, 100);
 		material = new THREE.MeshPhongMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side: THREE.DoubleSide});
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
-		mesh.position.set(150, 250, 0);
-		scene.add(mesh)
+		mesh.position.set(100, 250, 0);
+		scene.add(mesh); objects.push(mesh);
 		geometry = new THREE.BoxGeometry(30, 30, 30);
-		mesh = new THREE.Mesh(geometry, material);
+		mesh = new THREE.Mesh(geometry, material.clone());
 		mesh.position.set(-100, 70, 0)
 		mesh.purpose = 'surface'
-		scene.add(mesh)
-
+		scene.add(mesh); objects.push(mesh);
+		mesh.clone(true);
+		mesh.position.set(100, 15, 0)
+		scene.add(mesh); objects.push(mesh)
 		
-		
-		player1 = new Player({
+		player1 = new Player('player1', {
 			jump: 90, left: 70, right: 72, fire: 88, dash: 83
 		})
 		player1.position.set(0, 50, 0)
-		scene.add(player1)
-		console.log(player1)
+		scene.add(player1); objects.push(player1);
+		/*
+		player2 = new Player('player2', {
+			jump: 188, fire: 190, left: 37, right: 39, dash: 76
+		})
+		scene.add(player2)
+		*/
+
 		
 			
 		document.addEventListener('keydown', function(e) {
 			var key = e.keyCode;
 			keysMap[key] = true;
 			
-			if (key === 39) player1.bones.body.position.x += 1;
-			if (key === 37) player1.bones.body.position.x += -1;
-			if (key === 82) player1.position.set (0, 50, 0)
-			if (key === 76) {
-				for (var prop in player1.bones) console.log(player1.bones[prop].quaternion)
+			//if (key === 39) player1.bones.body.position.x += 1;
+			//if (key === 37) player1.bones.body.position.x += -1;
+			if (key === 82) {
+				player1.position.set (0, 50, 0)
+				if (player2) player2.position.set(0, 50, 0)
 			}
-			if (key === 75) for (var prop in counts) console.log(prop + ': ' + counts[prop])
-			if (key === 67) player1.animation.j1()
+			if (key === 76) {
+				//for (var prop in player1.bones) console.log(player1.bones[prop].quaternion)
+			}
+			//	if (key === 67) player1.animation.j1()
 			if (key === 66) {
 				var x, y, z;
 				x = player1.bones.r_shoulder.rotation.x; y = player1.bones.r_shoulder.rotation.y;z = player1.bones.r_shoulder.rotation.z;
@@ -163,7 +172,6 @@
 		var g = 1100;
 		var Vx = 110;
 		var _dashSpd = 240;
-		//player.user.onWall = false;
 		var time = player.user.clock.getElapsedTime();
 		
 		
@@ -177,13 +185,18 @@
 		
 		if (keysMap[player.controls.fire]) {
 			if (player.animation) player.animation.fire();
-			sfx['x-buster'].play();
+			var buster = new player.Buster();
+			if (buster.purpose === 'projectile') {
+				scene.add(buster); objects.push(buster);
+				sfx['x-buster'].play();
+			}
+			
 		}
 
 		if (keysMap[player.controls.left]) {
 			if (!player.user.left && player.user.dashing && !player.user.dashJ) player.user.dashing = false;
 			player.user.left = true;
-			if (!player.user.dashing && time-player.user.wJump_timer>.16) player.velocity.x = Math.max(player.velocity.x-Vx, -Vx)
+			if (!player.user.dashing && time-player.user.wJump_timer>.16) player.velocity.x = -Vx//Math.max(player.velocity.x-Vx, -Vx)
 			if (player.animation && !player.user.isAirborne(scene) && !player.user.airborne) {
 				if (player.user.dashing) player.animation.dash();
 				else player.animation.run();
@@ -193,7 +206,7 @@
 		if (keysMap[player.controls.right]) {
 			if (player.user.left && player.user.dashing && !player.user.dashJ) player.user.dashing = false;
 			player.user.left = false;
-			if (!player.user.dashing && time-player.user.wJump_timer>.16) player.velocity.x = Math.min(player.velocity.x+Vx, Vx)
+			if (!player.user.dashing && time-player.user.wJump_timer>.16) player.velocity.x = Vx//Math.min(player.velocity.x+Vx, Vx)
 			if (player.animation && !player.user.isAirborne(scene) && !player.user.airborne) {
 				if (player.user.dashing) player.animation.dash();
 				else player.animation.run();
@@ -211,6 +224,7 @@
 		}
 		if (player.user.dashing) {
 			if (player.user.dashJ || time-player.user.dash_prev<0.6) {
+				//if (time-player.user.wJump_timer>.16) player.velocity.x = Math.min(Math.abs(player.velocity.x)+_dashSpd,_dashSpd) * (player.user.left?-1:1);
 				if (time-player.user.wJump_timer>.16) player.velocity.x = _dashSpd * (player.user.left?-1:1);
 			}
 			else {
@@ -251,6 +265,7 @@
 				else if (!player.user.dashing && !player.user.left) player.animation.stop_right();
 			}
 		}
+		
 
 		var intersections = [];
 		intersections.push(player.bounds.botRight.intersectObjects(scene.children));
@@ -265,12 +280,12 @@
 				if (player.user.isAirborne(scene) && !keysMap[player.controls.right] && player.velocity.y<=0) {
 					player.user.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
-						if (player.user.sliding) {player.animation.turn_left(); player.user.left = true;}
+						if (time-player.user.latch_time>.25 && player.user.sliding) {player.animation.turn_left(); player.user.left = true;}
 						player.animation.fall();
 						
 					}
 				}
-				if (keysMap[player.controls.right]) player.user.onWall = true; 
+				if (keysMap[player.controls.right]&&player.user.isAirborne(scene)) player.user.onWall = true; 
 				else {player.user.onWall = false; player.user.sliding = false;}
 				if (player.velocity.y<0 && keysMap[player.controls.right] && (player.user.airborne )) {
 					player.user.airborne = false;
@@ -293,10 +308,10 @@
 					player.user.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
 						player.animation.fall(); 
-						if (player.user.sliding) {player.animation.turn_right(); player.user.left = false;}
+						if (time-player.user.latch_time>.25 && player.user.sliding) {player.animation.turn_right(); player.user.left = false;}
 					}
 				}
-				if (keysMap[player.controls.left]) player.user.onWall = true;
+				if (keysMap[player.controls.left]&&player.user.isAirborne(scene)) player.user.onWall = true;
 				else {player.user.onWall = false; player.user.sliding = false;}
 				if (player.velocity.y<0 && keysMap[player.controls.left] && player.user.airborne) {
 					player.user.latch_time = time;
@@ -318,11 +333,11 @@
 				if (player.user.isAirborne(scene) && !keysMap[player.controls.right] && player.velocity.y<=0) {
 					player.user.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
-						if (player.user.sliding) {player.animation.turn_left(); player.user.left = true;}
+						if (time-player.user.latch_time>.25 && player.user.sliding) {player.animation.turn_left(); player.user.left = true;}
 						player.animation.fall(); 
 					}
 				}
-				if (keysMap[player.controls.right]) player.user.onWall = true; 
+				if (keysMap[player.controls.right]&&player.user.isAirborne(scene)) player.user.onWall = true; 
 				else {player.user.onWall = false; player.user.sliding = false;}
 				if (player.velocity.y<0 && keysMap[player.controls.right] && player.user.airborne) {
 					player.user.latch_time = time;
@@ -345,10 +360,10 @@
 					player.user.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
 						player.animation.fall(); 
-						if (player.user.sliding) {player.animation.turn_right(); player.user.left = false;}
+						if (time-player.user.latch_time>.25 && player.user.sliding) {player.animation.turn_right(); player.user.left = false;}
 					}
 				}
-				if (keysMap[player.controls.left]) player.user.onWall = true;
+				if (keysMap[player.controls.left]&&player.user.isAirborne(scene)) player.user.onWall = true;
 				else {player.user.onWall = false; player.user.sliding = false;}
 				if (player.velocity.y<0 && keysMap[player.controls.left] && player.user.airborne) {
 					player.user.latch_time = time;
@@ -367,17 +382,22 @@
 		}
 		if ((player.user.can_wJump||player.user.onWall) && player.velocity.y<=0) {
 			if (player.user.can_wJump&&player.user.can_jump && keysMap[player.controls.jump] && player.user.wJump_cast === null) player.user.wJump_cast = time;
-			else if (player.user.can_wJump && player.user.can_jump && player.user.wJump_cast && time-player.user.wJump_cast>0.075) {
+			else if (player.user.can_wJump && player.user.can_jump && player.user.wJump_cast && time-player.user.wJump_cast>0.08) {
+				if (intersections[1].length>0 || intersections[3].length>0) player.user.left = true;
+				else player.user.left = false;
 				if (player.animation) player.animation.jump()
 				player.user.airborne = true;
-				sfx['jump'].play()
 				if (keysMap[player.controls.dash]) {
 					player.velocity.x = (player.user.left?1:-1)*(_dashSpd)
 					player.user.dashJ = true;
 					player.user.dashing = true;
 					player.user.can_dash = false;
+					sfx['dash_wJump'].play()
 				}
-				else player.velocity.x = (player.user.left?1:-1)*(Vx)
+				else {
+					player.velocity.x = (player.user.left?1:-1)*(Vx);
+					sfx['jump'].play()
+				}
 				player.user.wJump_timer = time;
 				player.velocity.y = 400; 
 				player.user.can_jump = false;
@@ -385,12 +405,12 @@
 				player.user.can_wJump = false
 				player.user.onWall = false
 			} 
-			else if (player.user.wJump_cast && time-player.user.wJump_cast<=.075) player.velocity.y = 0;
-			else if (player.user.onWall && time - player.user.latch_time <= .075) player.velocity.y = 0;
-			else if (player.user.onWall && time - player.user.latch_time > .1){
-				if (player.animation && time-player.user.latch_time-delta<.1) player.animation.slide();
-				player.velocity.y = -100
-				player.user.sliding = true;
+			else if (player.user.wJump_cast && time-player.user.wJump_cast<=.08) player.velocity.y = 0;
+			else if (player.user.onWall && time - player.user.latch_time <= .08) player.velocity.y = 0;
+			else if (player.user.onWall && time - player.user.latch_time > .08){
+				if (player.animation && time-player.user.latch_time-delta<.08) player.animation.slide();
+				player.velocity.y = -100;
+				if (player.user.isAirborne(scene)) player.user.sliding = true;
 			}
 			else player.velocity.y -= g * delta
 		}
@@ -463,10 +483,49 @@
 	function animate() {
 		if (Math.abs(camera.position.x-player1.position.x)>20)
 			camera.position.x = player1.position.x + 20 * (camera.position.x>player1.position.x?1:-1)
-		camera.position.z = 250
-		camera.position.y = player1.position.y
+		camera.position.z = 300
+		camera.position.y = player1.position.y + 50
+		//camera.lookAt(new THREE.Vector3(0, 100, 0))
 		var delta = clock.getDelta();
 		updatePlayer(player1, delta);
+		//updatePlayer(player2, delta)
+		for (var ob=0 ; ob<objects.length ; ob++) if (objects[ob].update_game) {
+			if (objects[ob].update_game({delta: delta, scene:scene}) === -1) {
+				objects[ob] = objects[objects.length-1];
+				objects.pop();
+			}
+		}
+		
+		var blockObjs = viewCheck(player1)
+		//blockObjs = blockObjs.concat(viewCheck(player2))
+		function viewCheck(player) {
+			var camPosition = camera.position.clone()
+			var playerPosition = player.position.clone()
+			playerPosition.sub(camPosition);
+			playerPosition.normalize();
+			var rayc = new THREE.Raycaster(camera.position.clone(), 
+																		 playerPosition
+																		)
+			var ret = [];
+			var intersections = rayc.intersectObjects(scene.children);
+			for (var obj=0 ; obj<intersections.length ; obj++) {
+				if (intersections[obj].object.name === 'player1') break;
+				ret.push(intersections[obj].object);
+				intersections[obj].object.material.transparent = true;
+				intersections[obj].object.material.opacity = 0.6;
+			}
+			return ret;
+		}
+		for (var i=0 ; i<scene.children.length ; i++) {
+			inner: {
+				for (var j=0 ; j<blockObjs.length ; j++) {
+					if (scene.children[i] === blockObjs[j]) break inner;
+				}
+				if (!scene.children[i].material) break inner;
+				scene.children[i].material.transparent = false;
+				scene.children[i].material.opacity = 1;
+			}
+		}
 		
 		renderer.render(scene, camera)
 		requestAnimationFrame(animate)
