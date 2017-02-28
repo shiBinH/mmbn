@@ -1,0 +1,24 @@
+{
+  "name": "mmx",
+  "version": "1.0.0",
+  "description": "MMX inspired gameplay",
+  "main": "main.js",
+  "dependencies": {
+    "socket.io": "^1.7.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+		"start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shiBinH/mmbn.git"
+  },
+  "author": "Shi Bin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shiBinH/mmbn/issues"
+  },
+  "homepage": "https://github.com/shiBinH/mmbn#readme"
+}

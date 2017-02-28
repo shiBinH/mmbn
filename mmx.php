@@ -7,6 +7,20 @@
 		<link rel="stylesheet" href="styles/mmx.css">
 	</head>
 	<body>
+		<form action="" method="" id="connect" style="background-color: grey; border: 1px solid white">
+			<label for="namespace">Namespace</label>
+			<input name="namespace" type="text">
+			<label for="room">Room</label>
+			<input name="room" type="text">
+			<button type="button">Connect</button>
+		</form>
+		<form action="" method="" id="setup"  style="background-color: grey">
+			<label for="name">Name</label>
+			<input name="name" type="text">
+			<label for="controls">Controls(L,R,F,J,D)</label>
+			<input name="controls" type="text">
+			<button type="button">Join</button>
+		</form>
 		<div id="rotations" style="float:left; color: white; display: none">
 			<div id="body">Body <button>x</button><button>y</button><button>z</button></div>
 			<div id="head">Head <button>x</button><button>y</button><button>z</button></div>
@@ -24,8 +38,8 @@
 			<div id="l_knee">L_knee <button>x</button><button>y</button><button>z</button></div>
 			<div id="l_ankle">L_ankle <button>x</button><button>y</button><button>z</button></div>
 		</div>
-		<audio id="audio-background" volume="0.5">
-			<source src="audio/mmx2-zero-theme.mp3" type="audio/mpeg" volume="0.5">
+		<audio id="audio-background" autoplay>
+			<!--<source src="audio/zerostart.mp3" type="audio/mpeg" volume="0.1">-->
 		</audio>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 		<script src="scripts/three.min.js"></script>

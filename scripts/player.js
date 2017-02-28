@@ -2,7 +2,8 @@ var X = {
 	Player: null,
 	Weapon: {
 		Buster: null,
-		Charge1: null
+		Charge1: null,
+		Charge2: null
 	}
 };
 
@@ -28,11 +29,10 @@ var X = {
 		'collada/charge1.dae',
 		function(collada) {
 			
-			console.log(collada)
 			var mesh = collada.scene.children[0];
 			
 			
-			X.Weapon.Charge1 = function(player, camera) {
+			X.Weapon.Charge1 = function(player) {
 				var charge1 = mesh.clone(true);
 				var geometry = collada.dae.geometries['charg1-mesh'].mesh.geometry3js;
 				var glow = new THREE.Mesh(geometry, customMaterial);
@@ -40,13 +40,13 @@ var X = {
 				charge1.add(glow)
 				charge1.purpose = 'projectile';
 				charge1.DPS = 30;
-				charge1.velocity = getVel(player, 300);
+				charge1.velocity = getVel(player, 100);
 				if (charge1.velocity.x < 0) charge1.rotateZ(Math.PI)
-				charge1.position.copy(getPos(player));
-				charge1.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 20),
-													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 20)
+				charge1.position.copy(getPos(player, 1));
+				charge1.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 15),
+													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 15)
 													];
-				charge1.raycasters[0].offsets = [-5, 2, 0]; charge1.raycasters[1].offsets = [-5, -2, 0];
+				charge1.raycasters[0].offsets = [-3*(charge1.velocity.x<0?-1:1), 5, 0]; charge1.raycasters[1].offsets = [-3*(charge1.velocity.x<0?-1:1), -5, 0];
 				charge1.update_game = function(data) {
 					charge1.position.x += charge1.velocity.x * data.delta;
 					for (var ray in charge1.raycasters) {
@@ -70,8 +70,78 @@ var X = {
 						}
 					}
 				};
-				charge1.sfx
+				charge1.sfx = {
+					'hit': newSFX('audio/hit.wav', .15),
+					'fire': newSFX('audio/charge1.wav', 0.2)
+				};
 				return charge1;
+			};
+			
+			var charge2Mat = customMaterial.clone(true);
+			charge2Mat.uniforms.glowColor.value = new THREE.Color(0x002fff)
+			X.Weapon.Charge2 = function(player) {
+				var charge2 = new THREE.Mesh(new THREE.SphereGeometry(16, 32, 16), new THREE.MeshToonMaterial({color: new THREE.Color(0x00E2FF)}));
+				var geometry = collada.dae.geometries['charge2-mesh'].mesh.geometry3js;
+				var n = 0;
+				
+				var glow = new THREE.Mesh(geometry, charge2Mat);
+				glow.scale.set(19, 19, 19)
+				charge2.add(glow)
+				charge2.purpose = 'projectile';
+				charge2.DPS = 50;
+				charge2.velocity = getVel(player, 250);
+				charge2.rotation.z = Math.PI/-2
+				if (charge2.velocity.x < 0) charge2.rotateZ(Math.PI)
+				charge2.position.copy(getPos(player));
+				charge2.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 32),
+													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 32)
+													];
+				charge2.raycasters[0].offsets = [-16*(charge2.velocity.x<0?-1:1), 15, 0]; charge2.raycasters[1].offsets = [-16*(charge2.velocity.x<0?-1:1), -15, 0];
+				charge2.active = true;
+				charge2.update_game = function(data) {
+					if (!charge2.active) return;
+					var offset = Math.sin(n);
+					n += 0.1;
+					glow.scale.set(19, 19+Math.sin(n), 19);
+					
+					if (charge2.position.x>data.scene.bounds.right+500) {
+						charge2.position.copy(getPos(player), 2);
+						charge2.velocity = getVel(player, 250);
+						if (charge2.velocity.x < 0) charge2.rotation.z = Math.PI/2;
+						else charge2.rotation.z = -Math.PI/2;
+					}
+					else charge2.position.x += charge2.velocity.x * data.delta;
+					for (var ray in charge2.raycasters) {
+						charge2.raycasters[ray].ray.origin.copy(charge2.position)
+						charge2.raycasters[ray].ray.origin.x+=charge2.raycasters[ray].offsets[0]; charge2.raycasters[ray].ray.origin.y+=charge2.raycasters[ray].offsets[1]; charge2.raycasters[ray].ray.origin.z+=charge2.raycasters[ray].offsets[2];
+						var intersections = charge2.raycasters[ray].intersectObjects(data.scene.children, true);
+						for (var obj=0 ; obj<intersections.length ; obj++) {
+							var intersected = intersections[obj];
+							if (intersected.object.purpose !== 'surface') {
+								var current = intersections[obj].object;
+								if (hitPlayer(current, charge2) === -1) {
+									charge2.position.x = data.scene.bounds.right+600;
+									charge2.active = false;
+									return;
+								}
+							} else {
+								charge2.active = false;
+								charge2.position.x = data.scene.bounds.right+600;
+								return;
+							}
+						}
+						if (charge2.position.x<data.scene.bounds.left || charge2.position.x>data.scene.bounds.right) {
+							charge2.position.x = data.scene.bounds.right+600;
+							charge2.active = false;
+							return;
+						}
+					}
+				};
+				charge2.sfx = {
+					fire: newSFX('audio/charge2.wav', .2),
+					hit: newSFX('audio/charge2_hit.wav', .2)
+				}
+				return charge2;
 			};
 			
 			
@@ -86,7 +156,7 @@ var X = {
 	};
 
 	function Player(name, controls) {
-
+		this.keysMap = {};
 		this.name = name;
 		this.purpose = 'player';
 		this.dead = null;
@@ -99,8 +169,8 @@ var X = {
 			midLeft: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 12),
 			botRight: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), 0, 12),
 			botLeft: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 12),
-			rightFoot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 13),
-			leftFoot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 13),
+			rightFoot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 33),
+			leftFoot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 33),
 		};
 		this.bounds.rightFoot.y = 33;
 		this.bounds.leftFoot.y = 33;
@@ -116,15 +186,15 @@ var X = {
 			can_jump: true,
 			isAirborne: function(scene) {
 				this.player.bounds.rightFoot.ray.origin.copy(this.player.position);
-				this.player.bounds.rightFoot.ray.origin.x += 9;
-				this.player.bounds.rightFoot.ray.origin.y += -20
+				this.player.bounds.rightFoot.ray.origin.x += 8;
+				//this.player.bounds.rightFoot.ray.origin.y += -20
 				var intersections = this.player.bounds.rightFoot.intersectObjects(scene.children);
 				for (var obj=0 ; obj<intersections.length ; obj++) {
 					if (intersections[obj].object.purpose === 'surface' && this.player.velocity.y<=0) return false;
 				}
 				this.player.bounds.leftFoot.ray.origin.copy(this.player.position);
-				this.player.bounds.leftFoot.ray.origin.x += -9;
-				this.player.bounds.leftFoot.ray.origin.y += -20
+				this.player.bounds.leftFoot.ray.origin.x += -8;
+				//this.player.bounds.leftFoot.ray.origin.y += -20
 				var intersections = this.player.bounds.leftFoot.intersectObjects(scene.children);
 				for (var obj=0 ; obj<intersections.length ; obj++) {
 					if (intersections[obj].object.purpose === 'surface' && this.player.velocity.y<=0) return false;
@@ -148,14 +218,15 @@ var X = {
 				HP: 200,
 				mesh: (function(player) {
 								var geometry = geometry = new THREE.CylinderGeometry(2, 2, 25);
-								var material = new THREE.MeshPhongMaterial({color: new THREE.Color('green')})
+								var material = new THREE.MeshLambertMaterial({color: new THREE.Color('green')})
 								var mesh = new THREE.Mesh(geometry, material);
 								mesh.rotateZ(Math.PI/2);
 								mesh.purpose = 'healthbar';
 								mesh.name = 'healthbar';
 								mesh.origin = player.name
 								return mesh;
-							 })(this)
+							 })(this),
+				prev: 0
 			},
 			fire: {
 				timer: null,
@@ -173,29 +244,19 @@ var X = {
 			}
 		};
 		
-		/*
-		this.newSFX = function (src, vol) {
-			var audio = document.createElement('audio');
-			var source = document.createElement('source');
-			audio.preload = 'none';
-			source.src = src;
-			source.type = 'audio/wav';
-			audio.appendChild(source);
-			if (vol !== undefined) audio.volume = vol;
-			return audio;
-		};
-		*/
-		
 		this.sfx = {
-			'x-buster': newSFX('audio/x-buster.wav', .5),
+			'x-buster': newSFX('audio/buster.wav', .1),
 			'death': newSFX('audio/death.wav', 0.15),
 			'jump': newSFX('audio/jump.wav', .5),
-			'land': newSFX('audio/land.wav', .75),
-			'hit': newSFX('audio/hit.wav', .1),
+			'land': newSFX('audio/land.wav', .4),
+			'hit': newSFX('audio/hit.wav', .15),
 			'dash': newSFX('audio/dash.wav'),
 			'dash_wJump': newSFX('audio/dash_wJump.wav', .08),
-			'charge1': newSFX('audio/charge1.wav', 0.25)
+			'charge1': newSFX('audio/charge1.wav', 0.2),
+			'charging_up': newSFX('audio/charging_up.wav', .05),
+			'charging_done': newSFX('audio/charging_done.wav', .05)
 		};
+		this.charge2 = null;
 		
 
 		init(this);
@@ -245,7 +306,7 @@ var X = {
 					var clone = bones[6].clone(true);
 					clone.children[0].add(mesh)
 					clone.visible = false;
-					clone.children[1].material = new THREE.MeshStandardMaterial({color: 0x00A3FF});
+					clone.children[1].material = new THREE.MeshBasicMaterial({color: 0x00A3FF});
 					clone.children[1].position.y = -6;
 					clone.name = 'clone'
 					clone.timer = new THREE.Clock();
@@ -534,10 +595,10 @@ var X = {
 		if (time-proto.prev[player.name]<.175) return null;
 		this.purpose = 'projectile';
 		this.DPS = 5;
-		THREE.Mesh.call(this, new THREE.SphereGeometry(4),new THREE.MeshStandardMaterial({emissive: new THREE.Color('yellow')}));
+		THREE.Mesh.call(this, new THREE.SphereGeometry(4),new THREE.MeshBasicMaterial({color: new THREE.Color(0xffc266)}));
 		
 		this.velocity = getVel(player);
-		this.position.copy(getPos(player))
+		this.position.copy(getPos(player, 1))
 		this.raycaster = new THREE.Raycaster(new THREE.Vector3(),
 																				 new THREE.Vector3(this.velocity.x<0?-1:1, 0, 0),
 																				 0, 12
@@ -552,7 +613,6 @@ var X = {
 		var intersections = this.raycaster.intersectObjects(data.scene.children, true);
 		for (var obj=0 ; obj<intersections.length ; obj++) {
 			if (intersections[obj].object.purpose === 'surface') {
-				data.scene.remove(this)
 				return -1;
 			} else {
 				var current = intersections[obj].object;
@@ -560,17 +620,16 @@ var X = {
 			}
 		}
 		if (this.position.x<data.scene.bounds.left || this.position.x>data.scene.bounds.right) {
-			data.scene.remove(this);
 			return -1;
 		}
 	};
 	
-	function getPos(player) {
+	function getPos(player, n) {
 		var rx = player.bones.r_shoulder.getWorldPosition().x;
-		if ((player.game.left&&!player.game.sliding) || (!player.game.left&&player.game.sliding)) rx += -15;
-		else rx += 15;
+		if ((player.game.left&&!player.game.sliding) || (!player.game.left&&player.game.sliding)) rx += -15 + (n===1?0:-25);
+		else rx += 15 + (n===1? 0 : 40);
 		var ry = player.bones.r_shoulder.getWorldPosition().y;
-		return new THREE.Vector3(rx, ry, 0);
+		return new THREE.Vector3(rx, ry, 0)
 	}
 	function getVel(player, offset) {
 		var vx = 400+(offset===undefined?0:offset);
@@ -582,19 +641,26 @@ var X = {
 			if (current.purpose === 'player') {
 				var name = current.name;
 				var dir;
-				current.sfx['hit'].play()
+				if (obj.sfx && obj.sfx.hit) obj.sfx.hit.play();
+				else {
+					current.sfx['hit'].pause();
+					current.sfx['hit'].currentTime = 0;
+					current.sfx['hit'].play()
+				}
 				if (!current.game.left&&current.game.sliding) dir = -1;
 				else if (current.game.left&&current.game.sliding) dir = 1;
 				else if (obj.velocity.x<0) dir = -1;
 				else dir = 1;
 				if (obj.DPS >= current.game.flinch.min)current.action.flinch(current.game.clock.getElapsedTime(), dir);
 				current.game.health.HP -= obj.DPS;
+				current.game.health.mesh.material.color = new THREE.Color('red');
+				current.game.health.prev = current.game.clock.getElapsedTime();
 				return -1;
 			}
 			current = current.parent;
 		}
 	}
-	function newSFX(src, vol) {
+	function newSFX(src, vol, loop) {
 			var audio = document.createElement('audio');
 			var source = document.createElement('source');
 			audio.preload = 'none';
@@ -602,6 +668,7 @@ var X = {
 			source.type = 'audio/wav';
 			audio.appendChild(source);
 			if (vol !== undefined) audio.volume = vol;
+			if (loop !== undefined) audio.loop = true;
 			return audio;
 		};
 	
