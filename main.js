@@ -4,7 +4,7 @@ const socketio = require('socket.io');
 
 var hostname;
 
-if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
+if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930';
 else hostname =  process.env.HOSTNAME || '192.168.1.6';
 const port = process.env.PORT || 4000;
 
