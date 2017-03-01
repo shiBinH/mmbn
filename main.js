@@ -12,9 +12,7 @@ const port = process.env.PORT || 4000;
 var players = [];
 
 
-console.log('a')
 const server = http.createServer(function(req, res) {
-	console.log('b')
 	let url = req.url;
 	let method = req.method;
 
@@ -61,8 +59,6 @@ testNS.on('connection', function(c) {
 });
 
 
-
-console.log(hostname)
 if (process.env.NODE_ENV === 'production') server.listen(port);
 else {
 	server.listen(port, hostname, function() {
