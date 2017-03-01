@@ -48,53 +48,57 @@
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(-170, -60, 0);
-		scene.add(mesh); objects.push(mesh);
+		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(50, 40, 100);
 		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(170, -60, 0);
-		scene.add(mesh); objects.push(mesh);
+		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(350, 40, 100);
 		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.position.y = -170;
 		mesh.purpose = 'surface';
-		scene.add(mesh); objects.push(mesh)
+		scene.add(mesh); objects.push(mesh) ;mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(80, 300, 100);
 		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side: THREE.DoubleSide});
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 270, 0);
-		scene.add(mesh); objects.push(mesh);
+		scene.add(mesh); objects.push(mesh);mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(500, 600, 100);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.position.set(-520, 0, 0)
 		mesh.purpose = 'surface'
-		scene.add(mesh); objects.push(mesh)
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		mesh = mesh.clone(true)
 		mesh.position.x *= -1;
 		mesh.purpose = 'surface'
-		scene.add(mesh); objects.push(mesh)
-		geometry = new THREE.BoxGeometry(50, 40, 50);
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		geometry = new THREE.BoxGeometry(50, 40, 80);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(-255, 85, 0);
-		scene.add(mesh); objects.push(mesh)
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		mesh = mesh.clone(true);
 		mesh.position.x *= -1;
 		mesh.purpose = 'surface';
-		scene.add(mesh); objects.push(mesh)
-		geometry = new THREE.BoxGeometry(40, 35, 50);
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		geometry = new THREE.BoxGeometry(40, 35, 80);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 0, 0);
-		scene.add(mesh); objects.push(mesh)
-		geometry = new THREE.BoxGeometry(800, 20, 50);
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		geometry = new THREE.BoxGeometry(1200, 300, 100);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
-		mesh.position.set(0, 300, 0);
-		scene.add(mesh); objects.push(mesh)
+		mesh.position.set(0, 450, 0);
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		geometry = new THREE.BoxGeometry(40, 80, 80);
+		mesh = new THREE.Mesh(geometry, material);
+		mesh.position.set(0, -290, 0);
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 
 		var setup = document.getElementById('setup');
 		setup.addEventListener('click', function(e){
@@ -157,6 +161,9 @@
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
 				user.position.set(240*Math.sign(1-2*Math.random()), 220, 0)
+			}
+			if (key === 65) {
+				user.controls.enabled = !user.controls.enabled;
 			}
 			/*
 			if (key === 76) {
@@ -249,6 +256,7 @@
 		player.bounds.rightFoot.ray.origin.x += 8; player.bounds.rightFoot.ray.origin.y += 0;
 		player.bounds.leftFoot.ray.origin.x += -8; player.bounds.leftFoot.ray.origin.y += 0;
 
+		if (player.controls.enabled) {
 		if (keysMap[player.controls.fire]) {
 
 			if (player.game.fire.timer === null) player.game.fire.timer = time;
@@ -310,49 +318,61 @@
 			}
 			
 		}
-
+		
 		if (keysMap[player.controls.left]) {
-			if (!player.game.left && player.game.dashing && !player.game.dashJ) player.game.dashing = false;
+			if (!player.game.left && (player.game.dashing||player.game.tap_dashing) && !player.game.dashJ) {player.game.tap_dashing = false;player.game.dashing = false;}
 			player.game.left = true;
+			player.game.tap.R.prev = 0;
+			if (player.game.tap.L.check) {
+				if (time-player.game.tap.L.prev<.2 && !isAirborne) {player.game.tap_dashing = true; player.game.dashing = true;}
+				player.game.tap.L.prev = time;
+			}
+			player.game.tap.L.check = false;
 			if (!player.game.dashing && time-player.game.wJump_timer>.16) player.velocity.x = -Vx//Math.max(player.velocity.x-Vx, -Vx)
 			if (player.animation && !isAirborne && !player.game.airborne) {
-				if (player.game.dashing) player.animation.dash();
+				if (player.game.dashing || player.game.tap_dashing) player.animation.dash();
 				else player.animation.run();
 			}
 			
 		} 
 		if (keysMap[player.controls.right]) {
-			if (player.game.left && player.game.dashing && !player.game.dashJ) player.game.dashing = false;
+			if (player.game.left && (player.game.dashing||player.game.tap_dashing) && !player.game.dashJ) {player.game.tap_dashing = false;player.game.dashing = false;}
 			player.game.left = false;
+			player.game.tap.L.prev = 0;
+			if (player.game.tap.R.check) {
+				if (time-player.game.tap.R.prev<.2 && !isAirborne) {player.game.tap_dashing = true; player.game.dashing = true;}
+				player.game.tap.R.prev = time;
+			}
+			player.game.tap.R.check = false;
 			if (!player.game.dashing && time-player.game.wJump_timer>.16) player.velocity.x = Vx//Math.min(player.velocity.x+Vx, Vx)
 			if (player.animation && !isAirborne && !player.game.airborne) {
-				if (player.game.dashing) player.animation.dash();
+				if (player.game.dashing || player.game.tap_dashing) player.animation.dash();
 				else player.animation.run();
 			}
 		}
 		
-		if (keysMap[player.controls.dash] && player.game.can_dash) {
-				player.game.can_dash = false
-				if (!isAirborne) {
-					player.animation.dash();
-					player.game.dashing = true;
-					player.sfx['dash'].play()
-					player.game.dash_prev = time;
+		if ((player.game.tap_dashing ||keysMap[player.controls.dash]) && player.game.can_dash) {
+			player.game.can_dash = false
+			if (!isAirborne) {
+				player.animation.dash();
+				player.game.dashing = true;
+				player.sfx['dash'].play()
+				player.game.dash_prev = time;
 			}
 		}
-		if (player.game.dashing) {
+		if (player.game.dashing || player.game.tap_dashing) {
 			if (player.game.dashJ || time-player.game.dash_prev<0.6) {
-				//if (time-player.game.wJump_timer>.16) player.velocity.x = Math.min(Math.abs(player.velocity.x)+_dashSpd,_dashSpd) * (player.game.left?-1:1);
 				if (time-player.game.wJump_timer>.16) player.velocity.x = _dashSpd * (player.game.left?-1:1);
 			}
 			else {
+				player.game.tap_dashing = false;
 				player.game.dashing = false;
 				player.game.dash_prev = time;
 			}
 		}
-		if (!player.game.dashJ && !keysMap[player.controls.dash]) {
+		if (!player.game.dashJ && !keysMap[player.controls.dash] && !player.game.tap_dashing) {
 			player.game.dashing = false;
-			player.game.can_dash = true;
+			if (!player.game.tap_dashing) player.game.can_dash = true;
 		}
 
 		
@@ -376,13 +396,19 @@
 			else if (keysMap[player.controls.right]) player.animation.turn_right();
 		}
 		
+		if (!keysMap[player.controls.left]) player.game.tap.L.check = true;
+		if (!keysMap[player.controls.right]) player.game.tap.R.check = true;
 		if (!keysMap[player.controls.left] && !keysMap[player.controls.right]) {
-			if((player.game.dashJ || (!player.game.dashing)) && time-player.game.wJump_timer>.16) player.velocity.x = 0
+			if ((player.game.dashJ || !player.game.dashing || player.game.tap_dashing) && time-player.game.wJump_timer>.16) {
+				player.game.tap_dashing = false;
+				player.velocity.x = 0;
+			}
 			if (player.animation && !player.game.isAirborne(scene)) {
 				if (keysMap[player.controls.dash] && player.game.can_dash) player.animation.dash();
 				else if (!player.game.dashing && player.game.left) player.animation.stop_left();
 				else if (!player.game.dashing && !player.game.left) player.animation.stop_right();
 			}
+		}
 		}
 		
 		var intersections = [];
@@ -558,6 +584,7 @@
 					player.game.airborne = false;
 					player.game.dashJ = false;
 					player.game.dashing = false;
+					player.game.tap_dashing = false;
 				}
 				player.position.y = player.bounds.rightFoot.y+intersections[4][obj].point.y;
 				player.velocity.y = 0;
@@ -572,6 +599,7 @@
 					player.game.airborne = false;
 					player.game.dashJ = false;
 					player.game.dashing = false;
+					player.game.tap_dashing = false;
 				} 
 				player.position.y = player.bounds.leftFoot.y+intersections[5][obj].point.y;
 				player.velocity.y = 0;
@@ -611,12 +639,12 @@
 		var health = player.game.health;
 		health.mesh.position.copy(player.position);
 		if (player !== user) health.HP = health.next;
-		if (player.position.y<-300 || health.HP <= 0) {
+		if (player.position.y<-500 || health.HP <= 0) {
 			player.sfx['death'].play()
 			// scene.remove(player);
 			player.game.fire.timer = null;
 			player.charge.a.scale.set(1, 1, 1); player.charge.b.scale.set(1, 1, 1);
-			player.position.set(600, 600, 0);
+			player.position.set(1000, 0, 0);
 			health.HP = 0; health.mesh.visible = false;
 			for (var plyr in players) if (players[plyr] === player) 
 				{players[plyr].dead = time; break;}
@@ -640,7 +668,14 @@
 	
 	function animate() {
 		var delta = clock.getDelta();
-		
+		if (user) {
+			var dif = Math.abs(camera.position.x-user.position.x);
+			if (dif>50) {
+				if (user.position.x>900) camera.position.x = 0;
+				else camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1)//1 * (camera.position.x>user.position.x?-1:1)
+			}
+			camera.position.y = Math.max(user.position.y, -300)
+		}
 
 		for (var plyr in players) {
 			if (players[plyr].game.health.HP<=0 && players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {

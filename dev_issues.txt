@@ -1,5 +1,5 @@
 - rooms instead of namespace
 - online setup
-- multiplayer position updates
+- chat
 
 - double tap dash

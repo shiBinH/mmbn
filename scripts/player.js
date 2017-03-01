@@ -202,6 +202,11 @@ var X = {
 				return true;
 			},
 			dash_prev: 0,
+			tap: {
+				L: {prev: 0, check: false},
+				R: {prev: 0, check: false}
+			},
+			tap_dashing: false,
 			latch_time: 0,
 			wJump_cast: null,
 			can_wJump: false,
