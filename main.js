@@ -62,7 +62,7 @@ testNS.on('connection', function(c) {
 */
 
 
-console.log('c')
+console.log(hostname)
 server.listen(port, hostname, function() {
 	console.log('server running on: ' + hostname + ':' + port)
 })
