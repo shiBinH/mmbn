@@ -97,7 +97,12 @@
 		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(40, 80, 80);
 		mesh = new THREE.Mesh(geometry, material);
-		mesh.position.set(0, -290, 0);
+		mesh.purpose = 'surface';
+		mesh.position.set(-80, -310, 0);
+		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		mesh = mesh.clone(true);
+		mesh.purpose = 'surface';
+		mesh.position.x *= -1;
 		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 
 		var setup = document.getElementById('setup');
