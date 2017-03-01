@@ -25,7 +25,7 @@ const server = http.createServer(function(req, res) {
 	})
 });
 
-/*
+
 const io = socketio(server);
 io.on('connection', function(c) {
 	console.log('server: connection established to "/"!')
@@ -59,7 +59,7 @@ testNS.on('connection', function(c) {
 	
 
 });
-*/
+
 
 
 console.log(hostname)
