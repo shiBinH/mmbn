@@ -2,11 +2,13 @@ const http = require('http');
 const fs = require('fs');
 const socketio = require('socket.io');
 
-const hostname = process.env.HOSTNAME || '192.168.1.6';
+console.log(process.env)
+const hostname = process.env.HOSTNAME || 'lit-hollows-49930' || '192.168.1.6';
 const port = process.env.PORT || 4000;
 
 
 var players = [];
+
 
 const server = http.createServer(function(req, res) {
 	let url = req.url;
