@@ -226,7 +226,8 @@ var X = {
 								mesh.origin = player.name
 								return mesh;
 							 })(this),
-				prev: 0
+				prev: 0,
+				next: 200
 			},
 			fire: {
 				timer: null,

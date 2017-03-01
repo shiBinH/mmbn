@@ -2,11 +2,10 @@
 	
 	var camera, scene, renderer;
 	var clock;
-	//var keysMap;
 	var objects;
 	var players;
 	var socket;
-	var temp = 0;
+	var temp;
 	var user;
 	var clientKeys;
 
@@ -15,7 +14,6 @@
 	animate();
 	
 	function init() {
-		//	var socket = io('/test');
 		
 		var geometry, material, mesh,
 				gridhelper, axis;
@@ -23,6 +21,7 @@
 		clientKeys = {};
 		objects = [];
 		players = {};
+		temp = 0;
 		
 		scene = new THREE.Scene();
 		scene.bounds = {left: -1000, right: 1000};
@@ -40,13 +39,9 @@
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
 		
 		renderer = new THREE.WebGLRenderer();
-		//	renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		document.body.appendChild(renderer.domElement);
 		
-		gridHelper = new THREE.GridHelper(400, 20, new THREE.Color('yellow'));
-		gridHelper.rotateX(Math.PI/2)
-		//scene.add(gridHelper)
 		
 		geometry = new THREE.BoxGeometry(50, 40, 100);
 		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
@@ -101,22 +96,6 @@
 		mesh.position.set(0, 300, 0);
 		scene.add(mesh); objects.push(mesh)
 
-		/*
-		var newPlayer = new X.Player('player1', {
-			jump: 90, left: 71, right: 74, fire: 88, dash: 83//, charge1: 65
-		});
-		newPlayer.position.set(-230, 220, 0)
-		players.push(newPlayer); scene.add(newPlayer); objects.push(newPlayer);
-		scene.add(newPlayer.game.health.mesh);
-		
-		newPlayer = new X.Player('player2', {
-			jump: 46, fire: 35, left: 100, right: 102, dash: 36
-		})
-		newPlayer.position.set(230, 220, 0)
-		players.push(newPlayer); scene.add(newPlayer); objects.push(newPlayer);
-		scene.add(newPlayer.game.health.mesh);
-		*/
-
 		var setup = document.getElementById('setup');
 		setup.addEventListener('click', function(e){
 			if (e.target.type !== 'button') return;
@@ -156,7 +135,7 @@
 			socket.on('update_user', function(data) {
 				players[data.player].keysMap = data.keysMap;
 				if (data.player === socket.id) return;
-				players[data.player].game.health.HP = data.hp;
+				players[data.player].game.health.next = data.hp;
 				players[data.player].position.set(data.position.x, data.position.y, data.position.z);
 			});
 			socket.on('player_disconnect', function(id) {
@@ -166,19 +145,14 @@
 		})
 		document.addEventListener('keydown', function(e) {
 			var key = e.keyCode;
-			//keysMap[key] = true;
 			clientKeys[key] = true;
-			/*
-			if (socket) {
-				socket.emit('keydown', {player: socket.id, key: key, position:{x:user.position.x,y:user.position.y, z:user.position.z}});
-			}
-			*/
+
 			/*
 			if (key === 39) player1.bones.body.position.x += 1;
 			if (key === 37) player1.bones.body.position.x += -1;
 			*/
 			if (key === 82) {
-				if (user && user.dead) scene.add(user);
+				if (user && user.game.health.HP<=0) scene.add(user);
 				user.game.health.mesh.visible = true;
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
@@ -245,16 +219,9 @@
 		})
 		document.addEventListener('keyup', function(e) {
 			var key = e.keyCode;
-			//keysMap[key] = false;
-			/*
-			if (socket) {
-				socket.emit('keyup', {player: socket.id, key: key, position:{x:user.position.x,y:user.position.y, z:user.position.z}});
-			}
-			*/
 			clientKeys[key] = false;
 		})
 		document.addEventListener('resize', function() {
-			//	adjust camera and renderer
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 			renderer.setSize( window.innerWidth, window.innerHeight );
@@ -266,6 +233,7 @@
 	}
 	
 	function updatePlayer(player, delta) {
+		if (player.dead) return;
 		var keysMap = player.keysMap;
 		var g = 1100;
 		var Vx = 130;
@@ -315,10 +283,6 @@
 					player.charge2.active = true;
 					projectile = player.charge2;
 					projectile.sfx.fire.play();
-					/*
-					projectile = new X.Weapon.Charge2(player);
-					projectile.sfx.fire.play();
-					*/
 				}
 				else if (time - player.game.fire.timer >1.25) {
 					projectile = new X.Weapon.Charge1(player);
@@ -330,7 +294,6 @@
 					player.sfx['x-buster'].pause()
 					player.sfx['x-buster'].currentTime = 0;
 					player.sfx['x-buster'].play()
-					//	play sfx
 				}
 				player.charge.a.scale.set(1, 1, 1);
 				player.charge.a.material.uniforms['c'].value = 1;
@@ -562,7 +525,7 @@
 				player.game.can_wJump = false
 				player.game.onWall = false
 			} 
-			//else if (player.game.wJump_cast && time-player.game.wJump_cast<=.08) player.velocity.y = 0;
+			else if (player.game.wJump_cast && time-player.game.wJump_cast<=.08) player.velocity.y = 0;
 			else if (player.game.onWall && time - player.game.latch_time <= .08) player.velocity.y = 0;
 			else if (player.game.onWall && time - player.game.latch_time > .08){
 				if (player.animation && time-player.game.latch_time-delta<.08) player.animation.slide();
@@ -647,10 +610,14 @@
 		
 		var health = player.game.health;
 		health.mesh.position.copy(player.position);
-		if (player.position.y<-250 || health.HP < 0) {
+		if (player !== user) health.HP = health.next;
+		if (player.position.y<-300 || health.HP <= 0) {
 			player.sfx['death'].play()
-			scene.remove(player);
-			player.game.health.mesh.visible = false;
+			// scene.remove(player);
+			player.game.fire.timer = null;
+			player.charge.a.scale.set(1, 1, 1); player.charge.b.scale.set(1, 1, 1);
+			player.position.set(600, 600, 0);
+			health.HP = 0; health.mesh.visible = false;
 			for (var plyr in players) if (players[plyr] === player) 
 				{players[plyr].dead = time; break;}
 		}
@@ -674,35 +641,25 @@
 	function animate() {
 		var delta = clock.getDelta();
 		
-		/*
-		if (user && user.dead && user.game.clock.getElapsedTime()-user.dead>5) {
-				scene.add(user);
-				user.game.health.HP = user.game.health.full;
-				user.dead = null;
-				user.velocity.set(0, 0, 0)
-				user.position.set(240*Math.sign(1-2*Math.random()), 180, 0)
-			}
-			*/
+
 		for (var plyr in players) {
-			if (players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {
-				scene.add(players[plyr]);
+			if (players[plyr].game.health.HP<=0 && players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {
+				//scene.add(players[plyr]);
 				players[plyr].game.health.mesh.visible = true;
-				players[plyr].game.health.HP = players[plyr].game.health.full;scene.add(players[plyr].game.health.mesh);
+				players[plyr].game.health.HP = players[plyr].game.health.full;//scene.add(players[plyr].game.health.mesh);
 				players[plyr].dead = null;
 				players[plyr].velocity.set(0, 0, 0)
 				players[plyr].position.set(plyr%2==0?-240:240, 180, 0)
 			}
 		}
 		if (socket && socket.id) {
-			socket.emit('update', {player: socket.id, 
+			socket.emit('update', {player: socket.id,
 														 hp: user.game.health.HP, 
 														 keysMap: clientKeys,
 														 position: {x:user.position.x, y:user.position.y, z:user.position.z}
 														});
 		}
-		for (var plyr in players) {
-			if (!players[plyr].dead) updatePlayer(players[plyr], delta);
-		}
+		for (var plyr in players) updatePlayer(players[plyr], delta);
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
 			if (scene.children[ob].update_game({delta:delta, scene:scene}) === -1) {
 				scene.remove(scene.children[ob]);
