@@ -3,8 +3,7 @@ const fs = require('fs');
 const socketio = require('socket.io');
 
 var hostname;
-console.log(process.env.hostname)
-console.log(process.env.host)
+
 if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
 else hostname =  process.env.HOSTNAME || '192.168.1.6';
 const port = process.env.PORT || 4000;
@@ -13,7 +12,9 @@ const port = process.env.PORT || 4000;
 var players = [];
 
 
+console.log('a')
 const server = http.createServer(function(req, res) {
+	console.log('b')
 	let url = req.url;
 	let method = req.method;
 
@@ -61,7 +62,7 @@ testNS.on('connection', function(c) {
 */
 
 
-
+console.log('c')
 server.listen(port, hostname, function() {
 	console.log('server running on: ' + hostname + ':' + port)
 })
