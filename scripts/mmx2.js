@@ -50,19 +50,19 @@
 		mesh.position.set(-170, -60, 0);
 		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(50, 40, 100);
-		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
+		//material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(170, -60, 0);
 		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(350, 40, 100);
-		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
+		//material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.position.y = -170;
 		mesh.purpose = 'surface';
 		scene.add(mesh); objects.push(mesh) ;mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(80, 300, 100);
-		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side: THREE.DoubleSide});
+		//material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side: THREE.DoubleSide});
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 270, 0);
@@ -95,10 +95,10 @@
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 450, 0);
 		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
-		geometry = new THREE.BoxGeometry(40, 80, 80);
+		geometry = new THREE.BoxGeometry(50, 80, 80);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
-		mesh.position.set(-80, -310, 0);
+		mesh.position.set(-100, -340, 0);
 		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		mesh = mesh.clone(true);
 		mesh.purpose = 'surface';
@@ -677,9 +677,15 @@
 			var dif = Math.abs(camera.position.x-user.position.x);
 			if (dif>50) {
 				if (user.position.x>900) camera.position.x = 0;
-				else camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1)//1 * (camera.position.x>user.position.x?-1:1)
+				else {
+					camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1);
+					camera.position.x = Math.min(camera.position.x, 180);
+					camera.position.x = Math.max(camera.position.x, -180);
+				}
 			}
-			camera.position.y = Math.max(user.position.y, -300)
+			camera.position.y = user.position.y;
+			camera.position.y = Math.max(camera.position.y, -220)
+			camera.position.y = Math.min(camera.position.y, 220)
 		}
 
 		for (var plyr in players) {
