@@ -1,21 +1,24 @@
 {
-  "name": "mmx",
+  "name": "mmbn",
   "version": "1.0.0",
-  "description": "MMX inspired gameplay",
+  "description": "Intro:\r - a first attempt at a game with three.js\r - based on capcom's MMBN series",
   "main": "main.js",
   "dependencies": {
     "socket.io": "^1.7.3"
   },
+	engines: {
+		"node": "6.10.0"
+	},
   "devDependencies": {},
   "scripts": {
-		"start": "node main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+   	"start": "node main.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shiBinH/mmbn.git"
   },
-  "author": "Shi Bin",
+  "keywords": [],
+  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/shiBinH/mmbn/issues"

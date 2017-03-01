@@ -2,8 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const socketio = require('socket.io');
 
-const hostname = process.env.OPENSHIFT_NODEJS_PORT || '192.168.1.6';
-const port = process.env.OPENSHIFT_NODEJS_IP || 4000;
+const hostname = process.env.HOSTNAME || '192.168.1.6';
+const port = process.env.PORT || 4000;
 
 
 var players = [];
