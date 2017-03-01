@@ -2,8 +2,9 @@ const http = require('http');
 const fs = require('fs');
 const socketio = require('socket.io');
 
-console.log(process.env)
-const hostname = 'lit-hollows-49930.herokuapp.com' || '192.168.1.6';
+var hostname;
+if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
+else hostname =  process.env.HOSTNAME || '192.168.1.6';
 const port = process.env.PORT || 4000;
 
 
@@ -21,6 +22,7 @@ const server = http.createServer(function(req, res) {
 	})
 });
 
+/*
 const io = socketio(server);
 io.on('connection', function(c) {
 	console.log('server: connection established to "/"!')
@@ -51,8 +53,10 @@ testNS.on('connection', function(c) {
 	c.on('disconnect', function(data) {
 		testNS.emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
 	})
+	
 
 });
+*/
 
 
 
