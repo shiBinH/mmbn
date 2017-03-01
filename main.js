@@ -4,7 +4,7 @@ const socketio = require('socket.io');
 
 var hostname;
 
-if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930';
+if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
 else hostname =  process.env.HOSTNAME || '192.168.1.6';
 const port = process.env.PORT || 4000;
 
@@ -63,8 +63,11 @@ testNS.on('connection', function(c) {
 
 
 console.log(hostname)
-server.listen(port, hostname, function() {
-	console.log('server running on: ' + hostname + ':' + port)
-})
+if (process.env.NODE_ENV === 'production') server.listen(port);
+else {
+	server.listen(port, hostname, function() {
+		console.log('server running on: ' + hostname + ':' + port)
+	})
+}
 
 
