@@ -35,12 +35,12 @@ io.on('connection', function(c) {
 	});
 })
 
-const testNS = io.of('/a');
+const testNS = io.of('/');
 testNS.on('connection', function(c) {
-	console.log('server: connected to /a namespace');
+	console.log('server: connected to "/" namespace');
 
 	c.join('1', function(err){});
-	for (var plyr in io.nsps['/a'].adapter.rooms['1'].sockets) {
+	for (var plyr in io.nsps['/'].adapter.rooms['1'].sockets) {
 		if (plyr === c.id) continue;
 		c.emit('add_player', players[plyr.substring(plyr.indexOf('#')+1)]);
 	}
@@ -51,6 +51,9 @@ testNS.on('connection', function(c) {
 	c.on('update', function(data) {
 		testNS.emit('update_user', data);
 	});
+	c.on('chat_msg', function(msg) {
+		testNS.emit('chat_update', msg);
+	})
 	c.on('disconnect', function(data) {
 		testNS.emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
 	})

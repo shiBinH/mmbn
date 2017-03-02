@@ -8,11 +8,9 @@
 	</head>
 	<body>
 		<form action="" method="" id="connect" style="background-color: grey; border: 1px solid white">
-			<label for="namespace">Namespace</label>
-			<input name="namespace" type="text">
 			<label for="room">Room</label>
 			<input name="room" type="text">
-			<button type="button">Connect</button>
+			<button type="button">Join RM1</button>
 		</form>
 		<form action="" method="" id="setup"  style="background-color: grey">
 			<label for="name">Name</label>
@@ -21,8 +19,8 @@
 			<input name="controls" type="text">
 			<button type="button">Join</button>
 		</form>
-		<div style="position: absolute; top:300px; background-color: black; opacity: 0.4;">
-			<input type="text" style="color: white; background-color: black">
+		<div id="chatbox">
+			<input id="chatinput" type="text">
 		</div>
 		<div id="rotations" style="float:left; color: white; display: none">
 			<div id="body">Body <button>x</button><button>y</button><button>z</button></div>
@@ -41,7 +39,7 @@
 			<div id="l_knee">L_knee <button>x</button><button>y</button><button>z</button></div>
 			<div id="l_ankle">L_ankle <button>x</button><button>y</button><button>z</button></div>
 		</div>
-		<audio id="audio-background" autoplay loop>
+		<audio id="audio-background"  loop>
 			<source src="audio/x5zerostart.mp3" type="audio/mpeg">
 		</audio>
 		<script src="/socket.io/socket.io.js"></script>

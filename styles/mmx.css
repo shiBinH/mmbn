@@ -3,3 +3,30 @@ body {
 	background-color: #000000;
 	overflow: hidden;
 }
+
+#chatbox {
+	font-weight: bold;
+	width: 300px;
+	position: absolute;
+	background-color: black;
+	opacity: 0.4;
+	color: white;
+	border: 1px solid grey;
+	max-height: 150px;
+	overflow: auto;
+}
+
+#chatinput {
+	font-family: Calibri;
+	width: 280px;
+	display: none;
+}
+
+#chatbox span {
+	font-family: Calibri;
+	display: block;
+}
+
+#connect {
+	display: none;
+}

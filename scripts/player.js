@@ -186,14 +186,14 @@ var X = {
 			can_jump: true,
 			isAirborne: function(scene) {
 				this.player.bounds.rightFoot.ray.origin.copy(this.player.position);
-				this.player.bounds.rightFoot.ray.origin.x += 8;
+				this.player.bounds.rightFoot.ray.origin.x += 7;
 				//this.player.bounds.rightFoot.ray.origin.y += -20
 				var intersections = this.player.bounds.rightFoot.intersectObjects(scene.children);
 				for (var obj=0 ; obj<intersections.length ; obj++) {
 					if (intersections[obj].object.purpose === 'surface' && this.player.velocity.y<=0) return false;
 				}
 				this.player.bounds.leftFoot.ray.origin.copy(this.player.position);
-				this.player.bounds.leftFoot.ray.origin.x += -8;
+				this.player.bounds.leftFoot.ray.origin.x += -7;
 				//this.player.bounds.leftFoot.ray.origin.y += -20
 				var intersections = this.player.bounds.leftFoot.intersectObjects(scene.children);
 				for (var obj=0 ; obj<intersections.length ; obj++) {

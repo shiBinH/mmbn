@@ -2,4 +2,3 @@
 - online setup
 - chat
 
-- double tap dash

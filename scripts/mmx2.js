@@ -8,6 +8,7 @@
 	var temp;
 	var user;
 	var clientKeys;
+	var chat_timer;
 
 	
 	init();
@@ -34,14 +35,14 @@
 		scene.add(hemisphere)
 		
 		//camera = new THREE.OrthographicCamera(-1920/6, 1920/6, 1080/6, -1080/6, 30, 500)
-		camera= new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 30, 1000)
+		camera= new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 30, 1000)
 		camera.position.set(0, 0, 400)
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
 		
 		renderer = new THREE.WebGLRenderer();
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		document.body.appendChild(renderer.domElement);
-		
+		var chatbox = document.getElementById('chatbox');
 		
 		geometry = new THREE.BoxGeometry(50, 40, 100);
 		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
@@ -111,6 +112,7 @@
 			var userInput = this.controls.value.toUpperCase();
 			if (userInput.length !== 5) return;
 			var newPlayer = new X.Player(this.name.value, {
+				enabled: true,
 				left: userInput.charCodeAt(0), right: userInput.charCodeAt(1),
 				fire: userInput.charCodeAt(2), jump: userInput.charCodeAt(3), dash: userInput.charCodeAt(4)
 			});
@@ -119,14 +121,14 @@
 			user = newPlayer;
 			scene.add(newPlayer.game.health.mesh)
 			this.style.display = 'none';
+			document.getElementById('connect').style.display = 'block';
 		})
 		var connect = document.getElementById('connect');
 		connect.addEventListener('click', function(e) {
 			if (e.target.type !== 'button') return;
 			this.style.display = 'none';
-			var nmsp = this.namespace.value;
-			var room = this.room.value;
-			socket = io('/'+nmsp);
+			//	var room = this.room.value;
+			socket = io();
 			socket.on('connect', function(){
 				players[socket.id] = user;
 				socket.emit('new_player', {player: socket.id, name: user.name, controls: user.controls})
@@ -150,25 +152,51 @@
 			socket.on('player_disconnect', function(id) {
 				scene.remove(players[id]); scene.remove(players[id].game.health.mesh);
 				delete players[id];
+			});
+			socket.on('chat_update', function(msg) {
+				var newMsg = document.createElement('span');
+				newMsg.appendChild(document.createTextNode(msg));
+				var chatbox = document.getElementById('chatbox')
+				var chatinput = chatbox.removeChild(document.getElementById('chatinput'));
+				chatbox.appendChild(newMsg);
+				chatbox.appendChild(chatinput);
+				chatbox.style.display = 'inline';
+				chat_timer = clock.getElapsedTime();
+				if (chatbox.children.length > 11) chatbox.removeChild(chatbox.firstChild);
 			})
 		})
 		document.addEventListener('keydown', function(e) {
 			var key = e.keyCode;
-			clientKeys[key] = true;
-
+			if (user && user.controls.enabled) clientKeys[key] = true;
 			/*
 			if (key === 39) player1.bones.body.position.x += 1;
 			if (key === 37) player1.bones.body.position.x += -1;
 			*/
-			if (key === 82) {
+			if (key === 82 && user && user.controls.enabled) {
 				if (user && user.game.health.HP<=0) scene.add(user);
 				user.game.health.mesh.visible = true;
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
 				user.position.set(240*Math.sign(1-2*Math.random()), 220, 0)
 			}
-			if (key === 65) {
-				user.controls.enabled = !user.controls.enabled;
+			if (key === 13 && document.getElementById('connect').style.display === 'none') {
+				var chatbox = document.getElementById('chatbox');
+				var chatinput = document.getElementById('chatinput');
+				if (chatinput.style.display === 'none') {
+					chatbox.style.display = 'inline';
+					chatinput.style.display = 'block';
+					chatinput.focus();
+					chat_timer = null;
+					if (user) user.controls.enabled = false;
+				} else {
+					var msg = chatinput.value + '';
+					if (msg.length > 0) {
+						msg = user.name + ': ' + msg;
+						socket.emit("chat_msg", msg);
+					}
+					chatinput.value = '';
+					chatinput.style.display = 'none';
+				}
 			}
 			/*
 			if (key === 76) {
@@ -233,12 +261,20 @@
 			var key = e.keyCode;
 			clientKeys[key] = false;
 		})
+		document.getElementById('chatinput').addEventListener('blur', function(e) {
+			if (user) user.controls.enabled = true;
+			chat_timer = clock.getElapsedTime();
+			var chatinput = document.getElementById('chatinput');
+			chatinput.value = '';
+			chatinput.style.display = 'none';
+		})
 		document.addEventListener('resize', function() {
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 			renderer.setSize( window.innerWidth, window.innerHeight );
 		})
 		
+		chat_timer = null;
 		document.getElementById("audio-background").volume = 0.3
 		renderer.render(scene, camera)
 		
@@ -256,13 +292,13 @@
 		for (bound in player.bounds) player.bounds[bound].ray.origin.copy(player.position);
 		player.bounds.rightUp.ray.origin.x += 4;
 		player.bounds.leftUp.ray.origin.x -= 4;
-		player.bounds.botRight.ray.origin.y -= 29;
-		player.bounds.botLeft.ray.origin.y -= 29;
-		player.bounds.rightFoot.ray.origin.x += 8; player.bounds.rightFoot.ray.origin.y += 0;
-		player.bounds.leftFoot.ray.origin.x += -8; player.bounds.leftFoot.ray.origin.y += 0;
+		player.bounds.botRight.ray.origin.y -= 26;
+		player.bounds.botLeft.ray.origin.y -= 26;
+		player.bounds.rightFoot.ray.origin.x += 7; player.bounds.rightFoot.ray.origin.y += 0;
+		player.bounds.leftFoot.ray.origin.x += -7; player.bounds.leftFoot.ray.origin.y += 0;
 
-		if (player.controls.enabled) {
-		if (keysMap[player.controls.fire]) {
+
+		if (player.controls.enabled && keysMap[player.controls.fire]) {
 
 			if (player.game.fire.timer === null) player.game.fire.timer = time;
 			else if (time - player.game.fire.timer> 2.5) {
@@ -285,7 +321,7 @@
 				player.sfx['charging_up'].play()
 				player.charge.a.scale.multiplyScalar(1.045);
 			}
-		} else {
+		} else if(player.controls.enabled) {
 			if (player.game.fire.timer !== null) {
 				var projectile;
 				if (player.animation) player.animation.fire()
@@ -324,7 +360,7 @@
 			
 		}
 		
-		if (keysMap[player.controls.left]) {
+		if (player.controls.enabled && keysMap[player.controls.left]) {
 			if (!player.game.left && (player.game.dashing||player.game.tap_dashing) && !player.game.dashJ) {player.game.tap_dashing = false;player.game.dashing = false;}
 			player.game.left = true;
 			player.game.tap.R.prev = 0;
@@ -340,7 +376,7 @@
 			}
 			
 		} 
-		if (keysMap[player.controls.right]) {
+		if (player.controls.enabled && keysMap[player.controls.right]) {
 			if (player.game.left && (player.game.dashing||player.game.tap_dashing) && !player.game.dashJ) {player.game.tap_dashing = false;player.game.dashing = false;}
 			player.game.left = false;
 			player.game.tap.L.prev = 0;
@@ -356,7 +392,7 @@
 			}
 		}
 		
-		if ((player.game.tap_dashing ||keysMap[player.controls.dash]) && player.game.can_dash) {
+		if (player.controls.enabled && (player.game.tap_dashing ||keysMap[player.controls.dash]) && player.game.can_dash) {
 			player.game.can_dash = false
 			if (!isAirborne) {
 				player.animation.dash();
@@ -381,7 +417,7 @@
 		}
 
 		
-		if (keysMap[player.controls.jump]) {
+		if (player.controls.enabled && keysMap[player.controls.jump]) {
 			if (!isAirborne && player.game.can_jump) {
 				player.velocity.y = 430; player.game.airborne = true;
 				player.game.can_jump = false;
@@ -414,8 +450,20 @@
 				else if (!player.game.dashing && !player.game.left) player.animation.stop_right();
 			}
 		}
+
+		if (!player.controls.enabled) {
+			player.velocity.x = 0;
+			player.velocity.y = Math.min(player.velocity.y, 0)
+			if (player.animation) {
+				if (player.game.airborne || isAirborne) {
+					if (player.velocity.y+g*delta>=0)player.animation.fall();
+				}
+				else {
+					if (player.game.left) player.animation.stop_left();
+					else player.animation.stop_right();
+				}
+			}
 		}
-		
 		var intersections = [];
 		intersections.push(player.bounds.botRight.intersectObjects(scene.children));
 		for (var obj in intersections[0]) {
@@ -531,7 +579,7 @@
 			if (player.game.airborne) player.game.can_jump = false;
 			if (player.velocity.y<0 && isAirborne && player.animation && player.velocity.y+100+g*delta>=0) {player.animation.fall();}
 		}
-		if ((player.game.can_wJump||player.game.onWall) && player.velocity.y<=0) {
+		if (player.controls.enabled && (player.game.can_wJump||player.game.onWall) && player.velocity.y<=0) {
 			if (player.game.can_wJump&&player.game.can_jump && keysMap[player.controls.jump] && player.game.wJump_cast === null) player.game.wJump_cast = time;
 			if (player.game.can_wJump && player.game.can_jump && player.game.wJump_cast && time-player.game.wJump_cast>0.0) {
 				if (intersections[1].length>0 || intersections[3].length>0) player.game.left = true;
@@ -568,6 +616,7 @@
 		}
 		else player.velocity.y -= g * delta;
 		player.velocity.y = Math.max(-450, player.velocity.y)
+		
 		if (time-player.game.flinch.timer<.2) {
 			player.velocity.x = player.game.flinch.vx;
 			player.game.can_jump = false;
@@ -679,13 +728,13 @@
 				if (user.position.x>900) camera.position.x = 0;
 				else {
 					camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1);
-					camera.position.x = Math.min(camera.position.x, 180);
-					camera.position.x = Math.max(camera.position.x, -180);
+					camera.position.x = Math.min(camera.position.x, 100);
+					camera.position.x = Math.max(camera.position.x, -100);
 				}
 			}
 			camera.position.y = user.position.y;
 			camera.position.y = Math.max(camera.position.y, -220)
-			camera.position.y = Math.min(camera.position.y, 220)
+			camera.position.y = Math.min(camera.position.y, 180)
 		}
 
 		for (var plyr in players) {
@@ -710,6 +759,11 @@
 			if (scene.children[ob].update_game({delta:delta, scene:scene}) === -1) {
 				scene.remove(scene.children[ob]);
 			}
+		}
+		
+		if (chat_timer !== null && clock.getElapsedTime()-chat_timer>=5) {
+			document.getElementById('chatbox').style.display = 'none';
+			chat_timer = null;
 		}
 		/*
 		for (var ob=0 ; ob<objects.length ; ob++) if (objects[ob].update_game) {
