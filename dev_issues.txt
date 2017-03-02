@@ -1,4 +1,4 @@
 - rooms instead of namespace
 - online setup
-- chat
+
 
