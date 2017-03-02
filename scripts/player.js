@@ -158,6 +158,7 @@ var X = {
 	function Player(name, controls) {
 		this.keysMap = {};
 		this.name = name;
+		this.name_Group = new THREE.Group();
 		this.purpose = 'player';
 		this.dead = null;
 		this.velocity = new THREE.Vector3();
@@ -587,7 +588,17 @@ var X = {
 			mesh.position.y -= 2;
 			outer.charge.group.add(mesh)
 			outer.charge.b = mesh;
-
+			
+			var fontLoader = new THREE.FontLoader();
+			fontLoader.load(
+				'../fonts/helvetiker_bold.typeface.json',
+				function(response) {
+					var textGeometry = new THREE.TextGeometry(outer.name, {font: response, size: 4, height: 1});
+					textGeometry.computeBoundingSphere();
+					console.log(textGeometry)
+					outer.name_Group.add(new THREE.Mesh(textGeometry, new THREE.MeshBasicMaterial({color:new THREE.Color('green')})));
+				}
+			)
 		}
 
 	}

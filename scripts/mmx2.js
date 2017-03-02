@@ -155,30 +155,14 @@
 			});
 			newPlayer.position.set(0, 50, 0);
 			scene.add(newPlayer);
+			console.log(newPlayer.name_Group)
+			scene.add(newPlayer.name_Group)
 			user = newPlayer;
 			scene.add(newPlayer.game.health.mesh);
 			this.style.display = set_msg.style.display = set_display.style.display =  'none';
 			document.getElementById('connect').style.display = 'block';
 		})
-		/*
-		var setup = document.getElementById('setup');
-		setup.addEventListener('click', function(e){
-			if (e.target.type !== 'button') return;
-			var userInput = this.controls.value.toUpperCase();
-			if (userInput.length !== 5) return;
-			var newPlayer = new X.Player(this.name.value, {
-				enabled: true,
-				left: userInput.charCodeAt(0), right: userInput.charCodeAt(1),
-				fire: userInput.charCodeAt(2), jump: userInput.charCodeAt(3), dash: userInput.charCodeAt(4)
-			});
-			newPlayer.position.set(0, 50, 0);
-			scene.add(newPlayer); objects.push(newPlayer);
-			user = newPlayer;
-			scene.add(newPlayer.game.health.mesh)
-			this.style.display = 'none';
-			document.getElementById('connect').style.display = 'block';
-		})
-		*/
+
 		var connect = document.getElementById('connect');
 		connect.style.top = (window.innerHeight/2 - 100/2) + 'px';
 		connect.style.left = (window.innerWidth/2 - 300/2) + 'px';
@@ -200,6 +184,7 @@
 				players[data.player].position.set(0, 50, 0);
 				scene.add(players[data.player]); objects.push(players[data.player]);
 				scene.add(players[data.player].game.health.mesh)
+				scene.add(players[data.player].name_Group);
 			})
 			socket.on('update_user', function(data) {
 				players[data.player].keysMap = data.keysMap;
@@ -208,7 +193,7 @@
 				players[data.player].position.set(data.position.x, data.position.y, data.position.z);
 			});
 			socket.on('player_disconnect', function(id) {
-				scene.remove(players[id]); scene.remove(players[id].game.health.mesh);
+				scene.remove(players[id]); scene.remove(players[id].game.health.mesh); scene.remove(players[id].name_Group)
 				delete players[id];
 			});
 			socket.on('chat_update', function(msg) {
@@ -789,6 +774,13 @@
 		}
 		health.mesh.position.y += 20;
 		
+		
+		if (player.name_Group.children.length > 0) {
+			player.name_Group.position.copy(player.position);
+			player.name_Group.position.x -= player.name_Group.children[0].geometry.boundingSphere.radius;
+			player.name_Group.position.y += 24;
+			if (player !== user) player.name_Group.children[0].material.color = new THREE.Color('white');
+		}
 		
 		for (var level in player.charge) {
 			if (player.charge[level].type === 'Group') continue;
