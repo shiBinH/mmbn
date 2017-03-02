@@ -127,11 +127,11 @@
 		connect.addEventListener('click', function(e) {
 			if (e.target.type !== 'button') return;
 			this.style.display = 'none';
-			//	var room = this.room.value;
+			var roomName = this.room.value + '';
 			socket = io();
 			socket.on('connect', function(){
 				players[socket.id] = user;
-				socket.emit('new_player', {player: socket.id, name: user.name, controls: user.controls})
+				socket.emit('new_player', {room: roomName, player: socket.id, name: user.name, controls: user.controls});
 			});
 			socket.on('announcement', function(data) {
 				console.log(data);

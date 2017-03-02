@@ -38,24 +38,38 @@ io.on('connection', function(c) {
 const testNS = io.of('/');
 testNS.on('connection', function(c) {
 	console.log('server: connected to "/" namespace');
-
-	c.join('1', function(err){});
+	
+	/*
 	for (var plyr in io.nsps['/'].adapter.rooms['1'].sockets) {
 		if (plyr === c.id) continue;
 		c.emit('add_player', players[plyr.substring(plyr.indexOf('#')+1)]);
 	}
+	*/
 	c.on('new_player', function(data) {
+		c.join(data.room);
+		for (var plyr in io.nsps['/'].adapter.rooms[data.room].sockets) {
+			if (plyr === c.id) continue;
+			c.emit('add_player', players[plyr.substring(plyr.indexOf('#')+1)]);
+		}
+				 
 		players[data.player] = data;
-		testNS.emit('add_player', data);
+		c.to(data.room).emit('add_player', data);
+		console.log(io.nsps['/'].adapter.rooms)
+		//	testNS.emit('add_player', data);
 	});
 	c.on('update', function(data) {
-		testNS.emit('update_user', data);
+		c.emit('update_user', data);
+		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('update_user', data);
+		//	testNS.emit('update_user', data);
 	});
 	c.on('chat_msg', function(msg) {
-		testNS.emit('chat_update', msg);
+		c.emit('chat_update', msg);
+		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('chat_update', msg)
+		//	testNS.emit('chat_update', msg);
 	})
 	c.on('disconnect', function(data) {
-		testNS.emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
+		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
+		//	testNS.emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
 	})
 	
 
