@@ -41,6 +41,7 @@ var X = {
 				charge1.purpose = 'projectile';
 				charge1.DPS = 30;
 				charge1.velocity = getVel(player, 100);
+				charge1.active = true;
 				if (charge1.velocity.x < 0) charge1.rotateZ(Math.PI)
 				charge1.position.copy(getPos(player, 1));
 				charge1.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 15),
@@ -48,7 +49,14 @@ var X = {
 													];
 				charge1.raycasters[0].offsets = [-3*(charge1.velocity.x<0?-1:1), 5, 0]; charge1.raycasters[1].offsets = [-3*(charge1.velocity.x<0?-1:1), -5, 0];
 				charge1.update_game = function(data) {
-					charge1.position.x += charge1.velocity.x * data.delta;
+					if (!charge1.active) return;
+					if (charge1.position.x>data.scene.bounds.right+500) {
+						charge1.position.copy(getPos(player), 1);
+						charge1.velocity = getVel(player, 100);
+						if (charge1.velocity.x < 0) charge1.rotation.z = -Math.PI/2;
+						else charge1.rotation.z = Math.PI/2;
+					}
+					else charge1.position.x += charge1.velocity.x * data.delta;
 					for (var ray in charge1.raycasters) {
 						charge1.raycasters[ray].ray.origin.copy(charge1.position)
 						charge1.raycasters[ray].ray.origin.x+=charge1.raycasters[ray].offsets[0]; charge1.raycasters[ray].ray.origin.y+=charge1.raycasters[ray].offsets[1]; charge1.raycasters[ray].ray.origin.z+=charge1.raycasters[ray].offsets[2];
@@ -57,16 +65,22 @@ var X = {
 							var intersected = intersections[obj];
 							if (intersected.object.purpose !== 'surface') {
 								var current = intersections[obj].object;
-								if (hitPlayer(current, charge1) === -1) return -1;
+								if (hitPlayer(current, charge1) === -1) {
+									charge1.position.x = data.scene.bounds.right+600;
+									charge1.active = false;
+									return;
+								}
 							} else {
-								data.scene.remove(charge1);
-								return -1;
+								charge1.active = false;
+								charge1.position.x = data.scene.bounds.right+600;
+								return;
 							}
 						}
 
 						if (charge1.position.x<data.scene.bounds.left || charge1.position.x>data.scene.bounds.right) {
-							data.scene.remove(charge1);
-							return -1;
+							charge1.position.x = data.scene.bounds.right+600;
+							charge1.active = false;
+							return;
 						}
 					}
 				};
@@ -252,17 +266,15 @@ var X = {
 		};
 		
 		this.sfx = {
-			'x-buster': newSFX('audio/buster.wav', .1),
 			'death': newSFX('audio/death.wav', 0.15),
 			'jump': newSFX('audio/jump.wav', .5),
 			'land': newSFX('audio/land.wav', .4),
-			'hit': newSFX('audio/hit.wav', .15),
 			'dash': newSFX('audio/dash.wav'),
 			'dash_wJump': newSFX('audio/dash_wJump.wav', .08),
-			'charge1': newSFX('audio/charge1.wav', 0.2),
 			'charging_up': newSFX('audio/charging_up.wav', .05),
 			'charging_done': newSFX('audio/charging_done.wav', .05)
 		};
+		this.charge1 = null;
 		this.charge2 = null;
 		
 
@@ -593,9 +605,8 @@ var X = {
 			fontLoader.load(
 				'../fonts/helvetiker_bold.typeface.json',
 				function(response) {
-					var textGeometry = new THREE.TextGeometry(outer.name, {font: response, size: 4, height: 1});
+					var textGeometry = new THREE.TextGeometry(outer.name, {font: response, size: 4, height: 0});
 					textGeometry.computeBoundingSphere();
-					console.log(textGeometry)
 					outer.name_Group.add(new THREE.Mesh(textGeometry, new THREE.MeshBasicMaterial({color:new THREE.Color('green')})));
 				}
 			)
@@ -621,6 +632,10 @@ var X = {
 																				 0, 12
 																				)
 		proto.prev[player.name] = time;
+		this.sfx = {
+			'fire': newSFX('audio/buster.wav', .1),
+			'hit': newSFX('audio/hit.wav', .15)
+		}
 	};
 	X.Weapon.Buster.prototype = new THREE.Mesh();
 	X.Weapon.Buster.prototype.prev = {};

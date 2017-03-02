@@ -1,4 +1,3 @@
 
-- online setup
 
-
+- land animation, wall jump animation, standing fire animation

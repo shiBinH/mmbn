@@ -155,7 +155,6 @@
 			});
 			newPlayer.position.set(0, 50, 0);
 			scene.add(newPlayer);
-			console.log(newPlayer.name_Group)
 			scene.add(newPlayer.name_Group)
 			user = newPlayer;
 			scene.add(newPlayer.game.health.mesh);
@@ -384,26 +383,31 @@
 			}
 		} else if(player.controls.enabled) {
 			if (player.game.fire.timer !== null) {
-				var projectile;
 				if (player.animation) player.animation.fire()
 				if (time-player.game.fire.timer>2.5) {
 					if (!player.charge2) {
 						player.charge2 = new X.Weapon.Charge2(player);
+						scene.add(player.charge2)
 					}
 					player.charge2.active = true;
-					projectile = player.charge2;
-					projectile.sfx.fire.play();
+					player.charge2.sfx.fire.play();
 				}
 				else if (time - player.game.fire.timer >1.25) {
-					projectile = new X.Weapon.Charge1(player);
-					projectile.sfx.fire.play();
+					if (!player.charge1) {
+						player.charge1 = new X.Weapon.Charge1(player)
+						scene.add(player.charge1);
+					}
+					player.charge1.active = true;
+					player.charge1.sfx.fire.play();
 				}
-				else 	projectile = new X.Weapon.Buster(player);
-				if (projectile.purpose === 'projectile') {
-					scene.add(projectile); //objects.push(projectile);
-					player.sfx['x-buster'].pause()
-					player.sfx['x-buster'].currentTime = 0;
-					player.sfx['x-buster'].play()
+				else 	{
+					var buster = new X.Weapon.Buster(player);
+					if (buster.purpose === 'projectile') {
+						scene.add(buster); //objects.push(projectile);
+						buster.sfx['fire'].pause()
+						buster.sfx['fire'].currentTime = 0;
+						buster.sfx['fire'].play()
+					}
 				}
 				player.charge.a.scale.set(1, 1, 1);
 				player.charge.a.material.uniforms['c'].value = 1;
