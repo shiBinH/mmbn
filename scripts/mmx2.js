@@ -9,13 +9,14 @@
 	var user;
 	var clientKeys;
 	var chat_timer;
+	var settingControls;
 
 	
 	init();
 	animate();
 	
 	function init() {
-		
+		var keys;
 		var geometry, material, mesh,
 				gridhelper, axis;
 		clock = new THREE.Clock();
@@ -51,22 +52,29 @@
 		mesh.position.set(-170, -60, 0);
 		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(50, 40, 100);
-		//material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(170, -60, 0);
 		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		geometry = new THREE.BoxGeometry(30, 40, 80);
+		mesh = new THREE.Mesh(geometry, material)
+		mesh.purpose = 'surface';
+		mesh.position.set(-150, 300, 0);
+		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		geometry = new THREE.BoxGeometry(30, 40, 80);
+		mesh = new THREE.Mesh(geometry, material)
+		mesh.purpose = 'surface';
+		mesh.position.set(150, 300, 0);
+		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(350, 40, 100);
-		//material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.position.y = -170;
 		mesh.purpose = 'surface';
 		scene.add(mesh); objects.push(mesh) ;mesh.matrixAutoUpdate = false; mesh.updateMatrix();
-		geometry = new THREE.BoxGeometry(80, 300, 100);
-		//material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side: THREE.DoubleSide});
+		geometry = new THREE.BoxGeometry(60, 90, 100);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
-		mesh.position.set(0, 270, 0);
+		mesh.position.set(0, 160, 0);
 		scene.add(mesh); objects.push(mesh);mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(500, 600, 100);
 		mesh = new THREE.Mesh(geometry, material);
@@ -105,7 +113,54 @@
 		mesh.purpose = 'surface';
 		mesh.position.x *= -1;
 		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
-
+		
+		var setup = document.getElementById('setup');
+		var display = document.getElementById('set_display');
+		var set_msg = document.getElementById('set_msg');
+		var set_controls = document.getElementById('set_controls');
+		var join_game = document.getElementById('join_game');
+		display.addEventListener('click', function(e) {
+			this.style.display = 'none';
+			set_msg.style.display = 'none';
+			set_controls.style.display = 'inline';
+			settingControls = false;
+			if (keys.length === 5) join_game.style.display = 'inline';
+			else join_game.style.display = 'none';
+			
+		})
+		setup.style.top = (window.innerHeight/2 - 300/2) + 'px';
+		setup.style.left = (window.innerWidth/2 - 300/2) + 'px';
+		set_msg.style.top = (window.innerHeight/2 - 150/2) + 'px';
+		set_msg.style.left = (window.innerWidth/2 - 300/2) + 'px';
+		display.style.display = 'none'
+		set_controls.addEventListener('click', function(e) {
+			display.focus();
+			keys = [];
+			e.target.style.display = 'none';
+			settingControls = true;
+			
+			display.style.width = window.innerWidth+'px';
+			display.style.height = window.innerHeight+'px';
+			display.style.top = 0; display.style.left = 0;
+			display.style.display = 'inline';
+			set_msg.style.display = 'inline';
+			document.getElementById('key').innerText = 'LEFT';
+		});
+		setup.addEventListener('click', function(e) {
+			if (e.target.id !== 'join_game' || !this.name.value) return;
+			var newPlayer = new X.Player(this.name.value, {
+				enabled: true,
+				left: keys[0], right: keys[1],
+				fire: keys[2], jump: keys[3], dash: keys[4]
+			});
+			newPlayer.position.set(0, 50, 0);
+			scene.add(newPlayer);
+			user = newPlayer;
+			scene.add(newPlayer.game.health.mesh);
+			this.style.display = set_msg.style.display = set_display.style.display =  'none';
+			document.getElementById('connect').style.display = 'block';
+		})
+		/*
 		var setup = document.getElementById('setup');
 		setup.addEventListener('click', function(e){
 			if (e.target.type !== 'button') return;
@@ -123,7 +178,10 @@
 			this.style.display = 'none';
 			document.getElementById('connect').style.display = 'block';
 		})
+		*/
 		var connect = document.getElementById('connect');
+		connect.style.top = (window.innerHeight/2 - 100/2) + 'px';
+		connect.style.left = (window.innerWidth/2 - 300/2) + 'px';
 		connect.addEventListener('click', function(e) {
 			if (e.target.type !== 'button') return;
 			this.style.display = 'none';
@@ -167,11 +225,24 @@
 		})
 		document.addEventListener('keydown', function(e) {
 			var key = e.keyCode;
+			if (settingControls) {
+				var actions = ['RIGHT', 'FIRE', 'JUMP', 'DASH'];
+				if (key === 13 || key === 82) return;
+				if (key === 27) set_display.click();
+				for (var keycode in keys) if (keys[keycode]===key) return;
+				document.getElementById('key').innerText = actions[keys.length];
+				keys.push(key);
+				if (keys.length === 5) {
+					settingControls = false;
+					set_display.style.display = 'none';
+					set_msg.style.display = 'none';
+					set_controls.style.display = 'inline';
+					join_game.style.display = 'inline';
+				} else join_game.style.display = 'none';
+				return;
+			}
 			if (user && user.controls.enabled) clientKeys[key] = true;
-			/*
-			if (key === 39) player1.bones.body.position.x += 1;
-			if (key === 37) player1.bones.body.position.x += -1;
-			*/
+			
 			if (key === 82 && user && user.controls.enabled) {
 				if (user && user.game.health.HP<=0) scene.add(user);
 				user.game.health.mesh.visible = true;
@@ -179,9 +250,10 @@
 				user.dead = null;
 				user.position.set(240*Math.sign(1-2*Math.random()), 220, 0)
 			}
+			var chatinput = document.getElementById('chatinput');
+			if (key === 27 && chatinput.style.display !== 'none') chatinput.style.display = 'none';
 			if (key === 13 && document.getElementById('connect').style.display === 'none') {
 				var chatbox = document.getElementById('chatbox');
-				var chatinput = document.getElementById('chatinput');
 				if (chatinput.style.display === 'none') {
 					chatbox.style.display = 'inline';
 					chatinput.style.display = 'block';
@@ -198,6 +270,10 @@
 					chatinput.style.display = 'none';
 				}
 			}
+			/*
+			if (key === 39) player1.bones.body.position.x += 1;
+			if (key === 37) player1.bones.body.position.x += -1;
+			*/
 			/*
 			if (key === 76) {
 				for (var prop in player1.bones) console.log(player1.bones[prop].quaternion)
@@ -668,6 +744,7 @@
 			var intersected = intersections[obj];
 			if (player.velocity.y>0 && intersected.object.purpose === 'surface') {
 				player.velocity.y = 0;
+				player.velocity.x = 0;
 				player.position.y = intersected.point.y - player.bounds.rightUp.far;
 				break;
 			}
@@ -677,6 +754,7 @@
 			var intersected = intersections[obj];
 			if (player.velocity.y>0 && intersected.object.purpose === 'surface') {
 				player.velocity.y = 0;
+				player.velocity.x = 0;
 				player.position.y = intersected.point.y - player.bounds.leftUp.far;
 				break;
 			}
@@ -735,8 +813,8 @@
 			dif = Math.abs(camera.position.y-user.position.y);
 			if (dif>10) camera.position.y = user.position.y + 10*(camera.position.y>user.position.y?1:-1);
 			//camera.position.y = user.position.y;
-			camera.position.y = Math.max(camera.position.y, -220)
-			camera.position.y = Math.min(camera.position.y, 180)
+			camera.position.y = Math.max(camera.position.y, -280)
+			camera.position.y = Math.min(camera.position.y, 230)
 		}
 
 		for (var plyr in players) {

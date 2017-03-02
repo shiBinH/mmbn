@@ -7,17 +7,27 @@
 		<link rel="stylesheet" href="styles/mmx.css">
 	</head>
 	<body>
-		<form action="" method="" id="connect" style="background-color: grey; border: 1px solid white">
+		<div id="set_display">
+			
+		</div>
+		<div id="set_msg">
+			<h2>
+				Press key for ..
+			</h2>
+			<h2 id="key"></h2>
+		</div>
+		<form action="" method="" id="connect">
+			<br><br>
 			<label for="room">Room</label>
 			<input name="room" type="text">
 			<button type="button">Join Room</button>
 		</form>
-		<form action="" method="" id="setup"  style="background-color: grey">
-			<label for="name">Name</label>
-			<input name="name" type="text">
-			<label for="controls">Controls(L,R,F,J,D)</label>
-			<input name="controls" type="text">
-			<button type="button">Join</button>
+		<form action="" method="" id="setup">
+			<br><br>
+			<label for="name">Name</label><br>
+			<input name="name" type="text"><br><br>
+			<button id="set_controls" type="button">Set Controls</button><br><br>
+			<button id="join_game" type="button">Join</button>
 		</form>
 		<div id="chatbox">
 			<input id="chatinput" type="text">
@@ -39,7 +49,7 @@
 			<div id="l_knee">L_knee <button>x</button><button>y</button><button>z</button></div>
 			<div id="l_ankle">L_ankle <button>x</button><button>y</button><button>z</button></div>
 		</div>
-		<audio id="audio-background" autoplay loop>
+		<audio id="audio-background" loop>
 			<source src="audio/x5zerostart.mp3" type="audio/mpeg">
 		</audio>
 		<script src="/socket.io/socket.io.js"></script>

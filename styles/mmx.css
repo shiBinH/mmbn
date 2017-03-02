@@ -4,6 +4,53 @@ body {
 	overflow: hidden;
 }
 
+#connect, #setup {
+	position: absolute;
+	background-color: black;
+	opacity: 0.8;
+	width: 300px;
+	height: 300px;
+	text-align: center;
+	color: white;
+}
+
+#connect {
+	display: none;
+	position: absolute;
+	background-color: black;
+	opacity: 0.8;
+	width: 300px;
+	height: 100px;
+	text-align: center;
+}
+
+
+#set_display {
+	position: absolute;
+	background-color: black;
+	opacity: 0.8;
+	text-align: center;
+	display: none;
+	z-index: 10;
+}
+
+#set_msg {
+	position: absolute;
+	background-color: white;
+	opacity: 1.25;
+	width: 300px;
+	height: 150px;
+	text-align: center;
+	display: none;
+	z-index: 20;
+	color: black;
+}
+
+#controls, #join_game {
+	display: none;
+}
+
+
 #chatbox {
 	font-weight: bold;
 	width: 300px;
@@ -25,8 +72,4 @@ body {
 #chatbox span {
 	font-family: Calibri;
 	display: block;
-}
-
-#connect {
-	display: none;
 }
