@@ -732,7 +732,9 @@
 					camera.position.x = Math.max(camera.position.x, -100);
 				}
 			}
-			camera.position.y = user.position.y;
+			dif = Math.abs(camera.position.y-user.position.y);
+			if (dif>10) camera.position.y = user.position.y + 10*(camera.position.y>user.position.y?1:-1);
+			//camera.position.y = user.position.y;
 			camera.position.y = Math.max(camera.position.y, -220)
 			camera.position.y = Math.min(camera.position.y, 180)
 		}
