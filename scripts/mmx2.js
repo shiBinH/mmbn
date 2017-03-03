@@ -36,7 +36,7 @@
 		scene.add(hemisphere)
 		
 		//camera = new THREE.OrthographicCamera(-100, 100, 80, -80, 30, 500)
-		camera= new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 1, 1000)
+		camera= new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 1, 1000)
 		camera.position.set(0, 0, 30)
 		//camera.position.set(0, 0, 80)
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
