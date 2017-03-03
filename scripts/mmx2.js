@@ -833,7 +833,7 @@
 				players[plyr].game.health.HP = players[plyr].game.health.full;//scene.add(players[plyr].game.health.mesh);
 				players[plyr].dead = null;
 				players[plyr].velocity.set(0, 0, 0)
-				players[plyr].position.set(plyr%2==0?-240:240, 180, 0)
+				players[plyr].position.set(240*Math.sign(1-2*Math.random()), 220, 0)
 			}
 		}
 
