@@ -38,6 +38,7 @@
 		//camera = new THREE.OrthographicCamera(-100, 100, 80, -80, 30, 500)
 		camera= new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 1, 1000)
 		camera.position.set(0, 0, 30)
+		//camera.position.set(0, 0, 80)
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
 		
 		renderer = new THREE.WebGLRenderer();
@@ -254,18 +255,19 @@
 					chatinput.style.display = 'none';
 				}
 			}
+			/*
 
 			if (key === 39) player1.bones.body.position.x += 1;
 			if (key === 37) player1.bones.body.position.x += -1;
 
-			/*
+
 			if (key === 76) {
 				for (var prop in user.bones) console.log(user.bones[prop].quaternion)
 			}
 			if (key === 67) {
 				user.animation.j1();
-				user.rotation.y = -Math.PI/2
 			}
+			if (key === 65) user.rotation.y = (user.rotation.y<0? 0 : -Math.PI/2);
 			if (key === 66) {
 				var x, y, z;
 				x = player1.bones.r_shoulder.rotation.x; y = player1.bones.r_shoulder.rotation.y;z = player1.bones.r_shoulder.rotation.z;
@@ -361,7 +363,6 @@
 		player.bounds.botLeft.ray.origin.y -= 26;
 		player.bounds.rightFoot.ray.origin.x += 7; player.bounds.rightFoot.ray.origin.y += 0;
 		player.bounds.leftFoot.ray.origin.x += -7; player.bounds.leftFoot.ray.origin.y += 0;
-
 
 		if (player.controls.enabled && keysMap[player.controls.fire]) {
 
@@ -807,7 +808,7 @@
 	
 	function animate() {
 		var delta = clock.getDelta();
-		
+
 		if (camera.position.z < 400 && user) {
 			camera.position.z += 2;
 			if (camera.position.y < 55) camera.position.y += .5;
@@ -849,6 +850,7 @@
 														 position: {x:user.position.x, y:user.position.y, z:user.position.z}
 														});
 		}
+
 		for (var plyr in players) updatePlayer(players[plyr], delta);
 
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
