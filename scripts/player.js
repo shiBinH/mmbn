@@ -288,7 +288,7 @@ var X = {
 				l6: 5, l7: 10	//	knee, shin
 			};
 			var offsets = {
-				jump: 2*-1.55,
+				jump: 2*-1.5,
 				fall: 2*-1.45,
 				run: 2*-1.5,
 				shoot_stand: 2*1.6,
