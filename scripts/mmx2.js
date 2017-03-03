@@ -36,8 +36,8 @@
 		scene.add(hemisphere)
 		
 		//camera = new THREE.OrthographicCamera(-100, 100, 80, -80, 30, 500)
-		camera= new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 30, 1000)
-		camera.position.set(0, 0, 400)
+		camera= new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 1, 1000)
+		camera.position.set(0, 0, 30)
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
 		
 		renderer = new THREE.WebGLRenderer();
@@ -153,11 +153,11 @@
 				left: keys[0], right: keys[1],
 				fire: keys[2], jump: keys[3], dash: keys[4]
 			});
-			newPlayer.position.set(0, 50, 0);
+			newPlayer.position.set(0, 55, 0);
 			scene.add(newPlayer);
-			scene.add(newPlayer.name_Group)
+			newPlayer.name_Group.position.y += 150;scene.add(newPlayer.name_Group);
 			user = newPlayer;
-			scene.add(newPlayer.game.health.mesh);
+			newPlayer.game.health.mesh.position.y += 150; scene.add(newPlayer.game.health.mesh);
 			this.style.display = set_msg.style.display = set_display.style.display =  'none';
 			document.getElementById('connect').style.display = 'block';
 		})
@@ -807,8 +807,12 @@
 	
 	function animate() {
 		var delta = clock.getDelta();
-
-		if (user) {
+		
+		if (camera.position.z < 400 && user) {
+			camera.position.z += 2;
+			if (camera.position.y < 55) camera.position.y += .5;
+		}
+		else if (user) {
 			var dif = Math.abs(camera.position.x-user.position.x);
 			if (dif>50) {
 				if (user.position.x>900) camera.position.x = 0;
