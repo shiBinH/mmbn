@@ -3,7 +3,8 @@ var X = {
 	Weapon: {
 		Buster: null,
 		Charge1: null,
-		Charge2: null
+		Charge2: null,
+		Saber: null
 	}
 };
 
@@ -30,7 +31,6 @@ var X = {
 		function(collada) {
 			
 			var mesh = collada.scene.children[0];
-			
 			
 			X.Weapon.Charge1 = function(player) {
 				var charge1 = mesh.clone(true);
@@ -158,7 +158,13 @@ var X = {
 				return charge2;
 			};
 			
-			
+			/*
+			console.log(collada)
+			var blade_mat = customMaterial.clone(true);
+			blade_mat.uniforms.glowColor.value = new THREE.Color(0x00ff99);
+			//var blade_glow = new THREE.Mesh()
+			X.Weapon.Saber = collada.scene.children[2];
+			*/
 		}
 	)
 	

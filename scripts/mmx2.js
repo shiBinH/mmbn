@@ -200,10 +200,10 @@
 				var newMsg = document.createElement('span');
 				newMsg.appendChild(document.createTextNode(msg));
 				var chatbox = document.getElementById('chatbox')
-				var chatinput = chatbox.removeChild(document.getElementById('chatinput'));
-				chatbox.appendChild(newMsg);
-				chatbox.appendChild(chatinput);
+				var chatinput = document.getElementById('chatinput');
+				chatbox.insertBefore(newMsg, chatinput);
 				chatbox.style.display = 'inline';
+				chatbox.scrollTop = window.innerHeight;
 				chat_timer = clock.getElapsedTime();
 				if (chatbox.children.length > 11) chatbox.removeChild(chatbox.firstChild);
 			})
@@ -251,6 +251,7 @@
 						msg = user.name + ': ' + msg;
 						socket.emit("chat_msg", msg);
 					}
+					chat_timer = clock.getElapsedTime();
 					chatinput.value = '';
 					chatinput.style.display = 'none';
 				}
@@ -807,6 +808,12 @@
 	}
 	
 	function animate() {
+		/*
+		if (X.Weapon.Saber && user) {
+			if (user.bones.l_hand.children.length===0) user.bones.l_hand.add(X.Weapon.Saber);
+			X.Weapon.Saber.rotation.y = Math.PI*-.8
+		}
+		*/
 		var delta = clock.getDelta();
 
 		if (camera.position.z < 400 && user) {

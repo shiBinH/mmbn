@@ -159,22 +159,22 @@ if (!this.A) this.A = {};
 			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee:l_ankle.quaternion', [0, .1, .2, .3], slide[14])
 		]),
 
-		wall_jump: new THREE.AnimationClip('wall_jump', 0.2, [
-			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0, .06, .13, .2], wall_jump[0]),
-			new THREE.QuaternionKeyframeTrack('group:body:head.quaternion', [0, .06, .13, .2], wall_jump[1]),
-			new THREE.QuaternionKeyframeTrack('group:body:pelvis.quaternion', [0, .06, .13, .2], wall_jump[2]),
-			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder.quaternion', [0, .06, .13, .2], wall_jump[3]),
-			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow.quaternion', [0, .06, .13, .2], wall_jump[4]),
-			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow:r_hand.quaternion', [0, .06, .13, .2], wall_jump[5]),
-			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder.quaternion', [0, .06, .13, .2], wall_jump[6]),
-			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow.quaternion', [0, .06, .13, .2], wall_jump[7]),
-			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow:l_hand.quaternion', [0, .06, .13, .2], wall_jump[8]),
-			new THREE.QuaternionKeyframeTrack('group:body:r_leg.quaternion', [0, .06, .13, .2], wall_jump[9]),
-			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee.quaternion', [0, .06, .13, .2], wall_jump[10]),
-			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee:r_ankle.quaternion',[0, .06, .13, .2], wall_jump[11]),
-			new THREE.QuaternionKeyframeTrack('group:body:l_leg.quaternion', [0, .06, .13, .2], wall_jump[12]),
-			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee.quaternion', [0, .06, .13, .2], wall_jump[13]),
-			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee:l_ankle.quaternion', [0, .06, .13, .2], wall_jump[14])
+		wall_jump: new THREE.AnimationClip('wall_jump', 0.27, [
+			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0, .09, .18, .27], wall_jump[0]),
+			new THREE.QuaternionKeyframeTrack('group:body:head.quaternion', [0, .09, .18, .27], wall_jump[1]),
+			new THREE.QuaternionKeyframeTrack('group:body:pelvis.quaternion', [0, .09, .18, .27], wall_jump[2]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder.quaternion', [0, .09, .18, .27], wall_jump[3]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow.quaternion', [0, .09, .18, .27], wall_jump[4]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_shoulder:r_elbow:r_hand.quaternion', [0, .09, .18, .27], wall_jump[5]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder.quaternion', [0, .09, .18, .27], wall_jump[6]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow.quaternion', [0, .09, .18, .27], wall_jump[7]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_shoulder:l_elbow:l_hand.quaternion', [0, .09, .18, .27], wall_jump[8]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg.quaternion', [0, .09, .18, .27], wall_jump[9]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee.quaternion', [0, .09, .18, .27], wall_jump[10]),
+			new THREE.QuaternionKeyframeTrack('group:body:r_leg:r_knee:r_ankle.quaternion',[0, .09, .18, .27], wall_jump[11]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg.quaternion', [0, .09, .18, .27], wall_jump[12]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee.quaternion', [0, .09, .18, .27], wall_jump[13]),
+			new THREE.QuaternionKeyframeTrack('group:body:l_leg:l_knee:l_ankle.quaternion', [0, .09, .18, .27], wall_jump[14])
 		]),
 		j1: new THREE.AnimationClip('j1', 0, [
 			new THREE.QuaternionKeyframeTrack('group:body.quaternion', [0], j1[0]),
