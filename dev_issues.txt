@@ -1,3 +1,5 @@
 
 
 - land animation, wall jump animation, standing fire animation
+
+- kill keeping

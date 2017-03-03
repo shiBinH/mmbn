@@ -35,7 +35,7 @@
 		hemisphere.position.set(0, 200, 0)
 		scene.add(hemisphere)
 		
-		//camera = new THREE.OrthographicCamera(-1920/6, 1920/6, 1080/6, -1080/6, 30, 500)
+		//camera = new THREE.OrthographicCamera(-100, 100, 80, -80, 30, 500)
 		camera= new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 30, 1000)
 		camera.position.set(0, 0, 400)
 		camera.lookAt(new THREE.Vector3(0, 0, 0))
@@ -184,7 +184,7 @@
 				scene.add(players[data.player]); objects.push(players[data.player]);
 				scene.add(players[data.player].game.health.mesh)
 				scene.add(players[data.player].name_Group);
-			})
+			});
 			socket.on('update_user', function(data) {
 				players[data.player].keysMap = data.keysMap;
 				if (data.player === socket.id) return;
@@ -254,15 +254,18 @@
 					chatinput.style.display = 'none';
 				}
 			}
-			/*
+
 			if (key === 39) player1.bones.body.position.x += 1;
 			if (key === 37) player1.bones.body.position.x += -1;
-			*/
+
 			/*
 			if (key === 76) {
-				for (var prop in player1.bones) console.log(player1.bones[prop].quaternion)
+				for (var prop in user.bones) console.log(user.bones[prop].quaternion)
 			}
-			if (key === 67) player1.animation.j1()
+			if (key === 67) {
+				user.animation.j1();
+				user.rotation.y = -Math.PI/2
+			}
 			if (key === 66) {
 				var x, y, z;
 				x = player1.bones.r_shoulder.rotation.x; y = player1.bones.r_shoulder.rotation.y;z = player1.bones.r_shoulder.rotation.z;
@@ -310,13 +313,15 @@
 			}
 			*/
 		})
+		
 		document.getElementById('rotations').addEventListener('click', function(e){
 			var target = e.target;
 			var angle = target.innerText.toUpperCase();
 			var bone = target.parentNode.id;
-			//player1.bones[bone]['rotate'+angle](0.1* (keysMap[189]?-1:1));
+			user.bones[bone]['rotate'+angle](0.1* (clientKeys[189]?-1:1));
 			//player1.bones[bone].rotation[angle.toLowerCase()] *= -1
 		})
+		
 		document.addEventListener('keyup', function(e) {
 			var key = e.keyCode;
 			clientKeys[key] = false;
@@ -538,6 +543,7 @@
 				player.position.x = intersected.point.x - player.bounds.botRight.far;
 				player.game.dashJ = false;
 				player.game.dashing = false;
+				player.game.tap_dashing = false;
 				
 				if (isAirborne && !keysMap[player.controls.right] && player.velocity.y<=0) {
 					player.game.airborne = true;
@@ -565,6 +571,7 @@
 				player.position.x = intersected.point.x + player.bounds.botLeft.far;
 				player.game.dashJ = false;
 				player.game.dashing = false;
+				player.game.tap_dashing = false;
 				
 				if (isAirborne && !keysMap[player.controls.left] && player.velocity.y<=0) {
 					player.game.airborne = true;
@@ -591,6 +598,7 @@
 				player.position.x = intersected.point.x - player.bounds.midRight.far;
 				player.game.dashJ = false;
 				player.game.dashing = false;
+				player.game.tap_dashing = false;
 				
 				if (isAirborne && !keysMap[player.controls.right] && player.velocity.y<=0) {
 					player.game.airborne = true;
@@ -617,6 +625,7 @@
 				player.position.x = intersected.point.x + player.bounds.midLeft.far;
 				player.game.dashJ = false;
 				player.game.dashing = false;
+				player.game.tap_dashing = false;
 				
 				if (isAirborne && !keysMap[player.controls.left] && player.velocity.y<=0) {
 					player.game.airborne = true;
@@ -649,7 +658,7 @@
 			if (player.game.can_wJump && player.game.can_jump && player.game.wJump_cast && time-player.game.wJump_cast>0.0) {
 				if (intersections[1].length>0 || intersections[3].length>0) player.game.left = true;
 				else player.game.left = false;
-				if (player.animation) player.animation.jump()
+				if (player.animation) player.animation.wall_jump()
 				player.game.airborne = true;
 				if (keysMap[player.controls.dash]) {
 					player.velocity.x = (player.game.left?1:-1)*(_dashSpd)
@@ -748,6 +757,7 @@
 				break;
 			}
 		}
+		
 
 		
 		if (!player.game.can_wJump && !player.game.onWall) {
@@ -756,6 +766,7 @@
 		}
 
 		if (player.animation) player.animation.update(delta);
+
 		
 		var health = player.game.health;
 		health.mesh.position.copy(player.position);
@@ -796,6 +807,7 @@
 	
 	function animate() {
 		var delta = clock.getDelta();
+
 		if (user) {
 			var dif = Math.abs(camera.position.x-user.position.x);
 			if (dif>50) {
@@ -812,6 +824,7 @@
 			camera.position.y = Math.max(camera.position.y, -280)
 			camera.position.y = Math.min(camera.position.y, 230)
 		}
+		
 
 		for (var plyr in players) {
 			if (players[plyr].game.health.HP<=0 && players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {
@@ -823,6 +836,8 @@
 				players[plyr].position.set(plyr%2==0?-240:240, 180, 0)
 			}
 		}
+
+
 		if (socket && socket.id) {
 			socket.emit('update', {player: socket.id,
 														 hp: user.game.health.HP, 
@@ -831,11 +846,13 @@
 														});
 		}
 		for (var plyr in players) updatePlayer(players[plyr], delta);
+
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
 			if (scene.children[ob].update_game({delta:delta, scene:scene}) === -1) {
 				scene.remove(scene.children[ob]);
 			}
 		}
+		
 		
 		if (chat_timer !== null && clock.getElapsedTime()-chat_timer>=5) {
 			document.getElementById('chatbox').style.display = 'none';

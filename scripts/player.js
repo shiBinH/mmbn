@@ -288,12 +288,13 @@ var X = {
 				l6: 5, l7: 10	//	knee, shin
 			};
 			var offsets = {
-				jump: 2*-1.45,
-				fall: 2*-1.35,
+				jump: 2*-1.55,
+				fall: 2*-1.45,
 				run: 2*-1.5,
 				shoot_stand: 2*1.6,
 				dash: 2*1.5,
-				slide: 2*-1.60
+				slide: 2*-1.60,
+				wall_jump: 2*-1.6
 			}
 			var bones = [];
 			for (var i=0 ; i<15 ; i++) bones.push(new THREE.Bone());
@@ -384,6 +385,10 @@ var X = {
 					clips['slide'] = clip;
 					action = mixer.clipAction(clip)
 					action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
+					clip = A.x.wall_jump;
+					clips['wall_jump'] = clip;
+					action = mixer.clipAction(clip)
+					action.setLoop(THREE.LoopOnce); action.clampWhenFinished = true;
 					clip = A.x.j1;
 					clips['j1'] = clip;
 					action = mixer.clipAction(clip);
@@ -469,7 +474,13 @@ var X = {
 							action = mixer.existingAction(clips['slide']);
 							if (action.isRunning()) return;
 							mixer.stopAllAction();
-							action.play(); action.reset()
+							action.play(); action.reset();
+						},
+						wall_jump: function() {
+							outer.rotation.y = outer.game.left? offsets.wall_jump : 0;
+							action = mixer.existingAction(clips['wall_jump']);
+							mixer.stopAllAction();
+							action.play(); action.reset();
 						},
 						j1: function() {
 							action = mixer.existingAction(clips['j1']);
