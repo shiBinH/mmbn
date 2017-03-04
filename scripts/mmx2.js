@@ -203,7 +203,7 @@
 				var chatinput = document.getElementById('chatinput');
 				chatbox.insertBefore(newMsg, chatinput);
 				chatbox.style.display = 'inline';
-				chatbox.scrollTop = window.innerHeight;
+				chatbox.scrollTop = 10000;
 				chat_timer = clock.getElapsedTime();
 				if (chatbox.children.length > 11) chatbox.removeChild(chatbox.firstChild);
 			})
