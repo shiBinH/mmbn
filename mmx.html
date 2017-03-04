@@ -32,6 +32,22 @@
 		<div id="chatbox">
 			<input id="chatinput" type="text">
 		</div>
+		<div id="announce_center">
+		</div>
+		<div id="scoreboard">
+			<table id="scoretable">
+				<thead>
+					<tr>
+						<th></th>
+						<th>Kills</th>
+						<!--<th>Total</th>-->
+						<th>Victories</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+		</div>
 		<div id="rotations" style="float:left; color: white; display: none">
 			<div id="body">Body <button>x</button><button>y</button><button>z</button></div>
 			<div id="head">Head <button>x</button><button>y</button><button>z</button></div>
@@ -49,7 +65,7 @@
 			<div id="l_knee">L_knee <button>x</button><button>y</button><button>z</button></div>
 			<div id="l_ankle">L_ankle <button>x</button><button>y</button><button>z</button></div>
 		</div>
-		<audio id="audio-background" autoplay loop>
+		<audio id="audio-background" autplay loop>
 			<source src="audio/x5zerostart.mp3" type="audio/mpeg">
 		</audio>
 		<script src="/socket.io/socket.io.js"></script>

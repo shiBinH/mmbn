@@ -39,12 +39,6 @@ const testNS = io.of('/');
 testNS.on('connection', function(c) {
 	console.log('server: connected to "/" namespace');
 	
-	/*
-	for (var plyr in io.nsps['/'].adapter.rooms['1'].sockets) {
-		if (plyr === c.id) continue;
-		c.emit('add_player', players[plyr.substring(plyr.indexOf('#')+1)]);
-	}
-	*/
 	c.on('new_player', function(data) {
 		c.join(data.room);
 		for (var plyr in io.nsps['/'].adapter.rooms[data.room].sockets) {
@@ -53,25 +47,44 @@ testNS.on('connection', function(c) {
 		}
 				 
 		players[data.player] = data;
+		players[data.player].score = {current: 0, total: 0, wins: 0};
 		c.to(data.room).emit('add_player', data);
 		console.log(io.nsps['/'].adapter.rooms)
-		//	testNS.emit('add_player', data);
 	});
 	c.on('update', function(data) {
 		c.emit('update_user', data);
 		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('update_user', data);
-		//	testNS.emit('update_user', data);
 	});
 	c.on('chat_msg', function(msg) {
 		c.emit('chat_update', msg);
 		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('chat_update', msg)
-		//	testNS.emit('chat_update', msg);
 	})
 	c.on('disconnect', function(data) {
 		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
-		//	testNS.emit('player_disconnect', c.id.substring(c.id.indexOf('#')+1));
 	})
-	
+	c.on('death_update', function(dmg_from) {
+		players[dmg_from].score.total++;
+		players[dmg_from].score.current++;
+		if (players[dmg_from].score.current >= 5) {
+			players[dmg_from].score.wins++;
+			var data = {player: dmg_from, scores:players[dmg_from].score}
+			c.emit('victory', data);
+			c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('victory', data);
+			for (var plyr in io.nsps['/'].adapter.rooms[players[c.id.substring(c.id.indexOf('#')+1)].room].sockets) {
+				players[plyr].score.current = 0;
+			}
+		} else {
+			var data = {player: dmg_from, scores:players[dmg_from].score}
+			c.emit('scoreboard_update', data);
+			c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('scoreboard_update', data);
+		}
+	});
+	c.on('reset_round', function(){
+		for (var plyr in io.nsps['/'].adapter.rooms[players[c.id.substring(c.id.indexOf('#')+1)].room].sockets) {
+			players[plyr].score.current = 0;
+		}
+		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('new_round');
+	})
 
 });
 

@@ -11,7 +11,6 @@
 	var chat_timer;
 	var settingControls;
 
-	
 	init();
 	animate();
 	
@@ -44,7 +43,6 @@
 		renderer = new THREE.WebGLRenderer();
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		document.body.appendChild(renderer.domElement);
-		var chatbox = document.getElementById('chatbox');
 		
 		geometry = new THREE.BoxGeometry(50, 40, 100);
 		material = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('images/metal.jpg'), side:THREE.DoubleSide})
@@ -115,119 +113,175 @@
 		mesh.position.x *= -1;
 		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		
-		var setup = document.getElementById('setup');
-		var display = document.getElementById('set_display');
-		var set_msg = document.getElementById('set_msg');
-		var set_controls = document.getElementById('set_controls');
-		var join_game = document.getElementById('join_game');
-		display.addEventListener('click', function(e) {
-			this.style.display = 'none';
-			set_msg.style.display = 'none';
-			set_controls.style.display = 'inline';
-			settingControls = false;
-			if (keys.length === 5) join_game.style.display = 'inline';
-			else join_game.style.display = 'none';
-			
-		})
-		setup.style.top = (window.innerHeight/2 - 300/2) + 'px';
-		setup.style.left = (window.innerWidth/2 - 300/2) + 'px';
-		set_msg.style.top = (window.innerHeight/2 - 150/2) + 'px';
-		set_msg.style.left = (window.innerWidth/2 - 300/2) + 'px';
-		display.style.display = 'none'
-		set_controls.addEventListener('click', function(e) {
-			display.focus();
-			keys = [];
-			e.target.style.display = 'none';
-			settingControls = true;
-			
-			display.style.width = window.innerWidth+'px';
-			display.style.height = window.innerHeight+'px';
-			display.style.top = 0; display.style.left = 0;
-			display.style.display = 'inline';
-			set_msg.style.display = 'inline';
-			document.getElementById('key').innerText = 'LEFT';
-		});
-		setup.addEventListener('click', function(e) {
-			if (e.target.id !== 'join_game' || !this.name.value) return;
-			var newPlayer = new X.Player(this.name.value, {
-				enabled: true,
-				left: keys[0], right: keys[1],
-				fire: keys[2], jump: keys[3], dash: keys[4]
-			});
-			newPlayer.position.set(0, 55, 0);
-			scene.add(newPlayer);
-			newPlayer.name_Group.position.y += 150;scene.add(newPlayer.name_Group);
-			user = newPlayer;
-			newPlayer.game.health.mesh.position.y += 150; scene.add(newPlayer.game.health.mesh);
-			this.style.display = set_msg.style.display = set_display.style.display =  'none';
-			document.getElementById('connect').style.display = 'block';
-		})
+		var $setup = $('#setup');
+		var $display = $('#set_display');
+		var $set_msg = $('#set_msg');
+		var $set_controls = $('#set_controls');
+		var $chatbox = $('#chatbox');
+		var $chatinput = $('#chatinput');
+		var $join_game = $('#join_game');
+		var $connect = $('#connect');
+		var $announce_center = $('#announce_center');
+		var $scoreboard = $('#scoreboard');
 
-		var connect = document.getElementById('connect');
-		connect.style.top = (window.innerHeight/2 - 100/2) + 'px';
-		connect.style.left = (window.innerWidth/2 - 300/2) + 'px';
-		connect.addEventListener('click', function(e) {
-			if (e.target.type !== 'button') return;
-			this.style.display = 'none';
-			var roomName = this.room.value + '';
-			socket = io();
-			socket.on('connect', function(){
-				players[socket.id] = user;
-				socket.emit('new_player', {room: roomName, player: socket.id, name: user.name, controls: user.controls});
-			});
-			socket.on('announcement', function(data) {
-				console.log(data);
-			});
-			socket.on('add_player', function(data) {
-				if (players[data.player]) return;
-				players[data.player] = new X.Player(data.name, data.controls);
-				players[data.player].position.set(0, 50, 0);
-				scene.add(players[data.player]); objects.push(players[data.player]);
-				scene.add(players[data.player].game.health.mesh)
-				scene.add(players[data.player].name_Group);
-			});
-			socket.on('update_user', function(data) {
-				players[data.player].keysMap = data.keysMap;
-				if (data.player === socket.id) return;
-				players[data.player].game.health.next = data.hp;
-				players[data.player].position.set(data.position.x, data.position.y, data.position.z);
-			});
-			socket.on('player_disconnect', function(id) {
-				scene.remove(players[id]); scene.remove(players[id].game.health.mesh); scene.remove(players[id].name_Group)
-				delete players[id];
-			});
-			socket.on('chat_update', function(msg) {
-				var newMsg = document.createElement('span');
-				newMsg.appendChild(document.createTextNode(msg));
-				var chatbox = document.getElementById('chatbox')
-				var chatinput = document.getElementById('chatinput');
-				chatbox.insertBefore(newMsg, chatinput);
-				chatbox.style.display = 'inline';
-				chatbox.scrollTop = 10000;
-				chat_timer = clock.getElapsedTime();
-				if (chatbox.children.length > 11) chatbox.removeChild(chatbox.firstChild);
+		divSetup();
+		function divSetup() {
+			$announce_center.css('width', window.innerWidth).css('top', window.innerHeight/2 - 200/2);
+			
+			$scoreboard.css('width', window.innerWidth/2).css('height', window.innerHeight/2);
+			$scoreboard.css('left', window.innerWidth/4).css('top', window.innerHeight/4);
+			
+			$display.on('click', function(e) {
+				this.style.display = 'none';
+				$set_msg.css('display', 'none');
+				$set_controls.css('display', 'inline');
+				settingControls = false;
+				if (keys.length === 5) $join_game.css('display', 'inline');
+				else $join_game.css('display', 'none');
+
 			})
-		})
+			$setup.css('top',window.innerHeight/2 - 300/2)
+			$setup.css('left', (window.innerWidth/2 - 300/2))
+			$set_msg.css('top', (window.innerHeight/2 - 150/2))
+			$set_msg.css('left', (window.innerWidth/2 - 300/2))
+			$display.css('display','none')
+			$set_controls.on('click', function(e) {
+				$display.focus();
+				keys = [];
+				e.target.style.display = 'none';
+				settingControls = true;
+
+				$display.css('width',window.innerWidth);
+				$display.css('height',window.innerHeight)
+				$display.css('top', 0); $display.css('left', 0);
+				$display.css('display', 'inline');
+				$set_msg.css('display', 'inline');
+				document.getElementById('key').innerText = 'LEFT';
+			});
+			$setup.on('click', function(e) {
+				if (e.target.id !== 'join_game' || !this.name.value) return;
+				var newPlayer = new X.Player(this.name.value, {
+					enabled: true,
+					left: keys[0], right: keys[1],
+					fire: keys[2], jump: keys[3], dash: keys[4]
+				});
+				newPlayer.position.set(0, 55, 0);
+				scene.add(newPlayer);
+				newPlayer.name_Group.position.y += 150;scene.add(newPlayer.name_Group);
+				user = newPlayer;
+				newPlayer.game.health.mesh.position.y += 150; scene.add(newPlayer.game.health.mesh);
+				$set_msg.css('display', 'none');
+				this.style.display =  'none';
+				$display.css('display', 'none');
+				$connect.css('display','block');
+			})	
+			$connect.css('top', (window.innerHeight/2 - 100/2));
+			$connect.css('left',(window.innerWidth/2 - 300/2));
+			$connect.on('click', function(e) {
+				if (e.target.type !== 'button') return;
+				this.style.display = 'none';
+				var roomName = this.room.value + '';
+				socket = io();
+				socket.on('connect', function(){
+					players[socket.id] = user;
+					user.socket = socket.id;
+					socket.emit('new_player', {room: roomName, player: socket.id, name: user.name, controls: user.controls});
+					var $newplayer = $('<tr>', {id: socket.id});
+					$newplayer.append('<th>'+user.name+'</th>').append('<td data-purpose="current">'+0+'</td>')/*.append('<td data-purpose="total">'+0+'</td>')*/.append('<td data-purpose="wins">'+0+'</td>');
+					$newplayer.find('th:first').css('color', 'green');
+					$scoreboard.find('tbody').append($newplayer);
+				});
+				socket.on('announcement', function(data) {
+					console.log(data);
+				});
+				socket.on('add_player', function(data) {
+					if (players[data.player]) return;
+					players[data.player] = new X.Player(data.name, data.controls);
+					players[data.player].position.set(0, 50, 0);
+					players[data.player].socket = data.player;
+					scene.add(players[data.player]); objects.push(players[data.player]);
+					scene.add(players[data.player].game.health.mesh)
+					scene.add(players[data.player].name_Group);
+					var $newplayer = $('<tr>', {id: data.player});
+					$newplayer.append('<th>'+data.name+'</th>').append('<td data-purpose="current">'+data.score.current+'</td>')/*.append('<td data-purpose="total">'+data.score.total+'</td>')*/.append('<td data-purpose="wins">'+data.score.wins+'</td>');
+					$scoreboard.find('tbody').append($newplayer);
+				});
+				socket.on('update_user', function(data) {
+					players[data.player].keysMap = data.keysMap;
+					if (data.player === socket.id) return;
+					players[data.player].game.health.next = data.hp;
+					players[data.player].position.set(data.position.x, data.position.y, data.position.z);
+				});
+				socket.on('player_disconnect', function(id) {
+					scene.remove(players[id]); scene.remove(players[id].game.health.mesh); scene.remove(players[id].name_Group)
+					$scoreboard.find('#'+id).remove();
+					delete players[id];
+				});
+				socket.on('chat_update', function(msg) {
+					var newMsg = document.createElement('span');
+					newMsg.appendChild(document.createTextNode(msg));
+					$chatinput.before(newMsg);
+					$chatbox.css('display', 'inline');
+					$chatbox.scrollTop(10000);
+					chat_timer = clock.getElapsedTime();
+					if ($chatbox.children.length > 11) $chatbox.remove($chatbox.children(':first'));
+				});
+				socket.on('scoreboard_update', function(data) {
+					$scoreboard.find('#'+data.player).find('[data-purpose="current"]').text(data.scores.current);
+					//$scoreboard.find('#'+data.player).find('[data-purpose="total"]').text(data.scores.total);
+				});
+				socket.on('victory', function(data) {
+					//$scoreboard.find('#'+data.player).find('[data-purpose="total"]').text(data.scores.total);
+					$scoreboard.find('#'+data.player).find('[data-purpose="wins"]').text(data.scores.wins);
+					$scoreboard.find('[data-purpose="current"]').text(0);
+					var $h2 = $('<h2>');
+					$h2.text(players[data.player].name + ' WINS!')
+					$announce_center.empty();
+					$announce_center.append($h2);
+					$announce_center.slideDown(250).delay(3000).fadeOut(3000).queue(function(){
+						socket.emit('reset_round');
+					}).dequeue()
+				});
+				socket.on('new_round', function() {
+					$scoreboard.find('[data-purpose="current"]').text(0);
+					user.game.dmg_from = null;
+					for (plyr in players) {
+						players[plyr].game.dmg_from = null;
+						players[plyr].game.health.mesh.visible = true;
+						players[plyr].game.health.next = players[plyr].game.health.full;
+						players[plyr].game.health.HP = players[plyr].game.health.full;//scene.add(players[plyr].game.health.mesh);
+						players[plyr].dead = null;
+						players[plyr].velocity.set(0, 0, 0)
+					}
+					user.position.set(240-Math.random()*480, 270, 0);
+				})
+			})
+		}
 		document.addEventListener('keydown', function(e) {
 			var key = e.keyCode;
+
 			if (settingControls) {
 				var actions = ['RIGHT', 'FIRE', 'JUMP', 'DASH'];
 				if (key === 13 || key === 82) return;
-				if (key === 27) set_display.click();
+				if (key === 27) $display.click();
 				for (var keycode in keys) if (keys[keycode]===key) return;
 				document.getElementById('key').innerText = actions[keys.length];
 				keys.push(key);
 				if (keys.length === 5) {
 					settingControls = false;
-					set_display.style.display = 'none';
+					$display.css('display', 'none');
 					set_msg.style.display = 'none';
-					set_controls.style.display = 'inline';
-					join_game.style.display = 'inline';
-				} else join_game.style.display = 'none';
+					$set_controls.css('display', 'inline');
+					$join_game.css('display','inline');
+				} else $join_game.css('display', 'none');
 				return;
 			}
 			if (user && user.controls.enabled) clientKeys[key] = true;
 			
+			if (key === 9 && socket) {
+				e.preventDefault();
+				$scoreboard.show();
+			}
 			if (key === 82 && user && user.controls.enabled) {
 				if (user && user.game.health.HP<=0) scene.add(user);
 				user.game.health.mesh.visible = true;
@@ -235,25 +289,23 @@
 				user.dead = null;
 				user.position.set(240*Math.sign(1-2*Math.random()), 220, 0)
 			}
-			var chatinput = document.getElementById('chatinput');
-			if (key === 27 && chatinput.style.display !== 'none') chatinput.style.display = 'none';
-			if (key === 13 && document.getElementById('connect').style.display === 'none') {
-				var chatbox = document.getElementById('chatbox');
-				if (chatinput.style.display === 'none') {
-					chatbox.style.display = 'inline';
-					chatinput.style.display = 'block';
-					chatinput.focus();
+			if (key === 27 && $chatinput.css('display') !== 'none') $chatinput.css('display', 'none');
+			if (key === 13 && socket) {
+				if ($chatinput.css('display') === 'none') {
+					$chatbox.css('display', 'inline');
+					$chatinput.css('display', 'inline');
+					$chatinput.focus();
 					chat_timer = null;
 					if (user) user.controls.enabled = false;
 				} else {
-					var msg = chatinput.value + '';
+					var msg = $chatinput.val() + '';
 					if (msg.length > 0) {
 						msg = user.name + ': ' + msg;
 						socket.emit("chat_msg", msg);
 					}
 					chat_timer = clock.getElapsedTime();
-					chatinput.value = '';
-					chatinput.style.display = 'none';
+					$chatinput.val('');
+					$chatinput.css('display', 'none');
 				}
 			}
 			/*
@@ -328,13 +380,15 @@
 		document.addEventListener('keyup', function(e) {
 			var key = e.keyCode;
 			clientKeys[key] = false;
+			
+			if (key === 9) $scoreboard.hide();
 		})
-		document.getElementById('chatinput').addEventListener('blur', function(e) {
+		$chatinput.on('blur', function(e) {
 			if (user) user.controls.enabled = true;
 			chat_timer = clock.getElapsedTime();
 			var chatinput = document.getElementById('chatinput');
-			chatinput.value = '';
-			chatinput.style.display = 'none';
+			$chatinput.val('');
+			$chatinput.css('display', 'none');
 		})
 		document.addEventListener('resize', function() {
 			camera.aspect = window.innerWidth / window.innerHeight;
@@ -693,18 +747,7 @@
 		else player.velocity.y -= g * delta;
 		player.velocity.y = Math.max(-450, player.velocity.y)
 		
-		if (time-player.game.flinch.timer<.2) {
-			player.velocity.x = player.game.flinch.vx;
-			player.game.can_jump = false;
-		}
-		else player.game.flinch.status = false;
-		if (time-player.game.flinch.timer<.05) player.velocity.y = player.game.flinch.vy
-		else if (time-player.game.flinch.timer-delta<.05) player.velocity.y = 0;
 		
-		if (player === user) {
-			player.position.x += player.velocity.x * delta;
-			player.position.y += player.velocity.y * delta;
-		}
 		
 		intersections.push(player.bounds.rightFoot.intersectObjects(scene.children))
 		for (var obj in intersections[4]) {
@@ -736,8 +779,20 @@
 				break;
 			}
 		}
-		if (intersections[4].length!==0 || intersections[5].length!==0) flag = true;
-		else flag = false;
+		
+		if (time-player.game.flinch.timer<.2) {
+			player.velocity.x = player.game.flinch.vx;
+			player.game.can_jump = false;
+		}
+		else player.game.flinch.status = false;
+		if (time-player.game.flinch.timer<.05) player.velocity.y = player.game.flinch.vy
+		else if (time-player.game.flinch.timer-delta<.05) player.velocity.y = 0;
+		
+		if (player === user) {
+			player.position.x += player.velocity.x * delta;
+			player.position.y += player.velocity.y * delta;
+		}
+
 		
 		intersections = player.bounds.rightUp.intersectObjects(scene.children);
 		for (var obj in intersections) {
@@ -772,22 +827,27 @@
 		
 		var health = player.game.health;
 		health.mesh.position.copy(player.position);
-		if (player !== user) health.HP = health.next;
-		if (player.position.y<-500 || health.HP <= 0) {
-			player.sfx['death'].play()
-			// scene.remove(player);
-			player.game.fire.timer = null;
-			player.charge.a.scale.set(1, 1, 1); player.charge.b.scale.set(1, 1, 1);
-			player.position.set(1000, 0, 0);
-			health.HP = 0; health.mesh.visible = false;
-			for (var plyr in players) if (players[plyr] === player) 
-				{players[plyr].dead = time; break;}
+		if (player !== user) {
+			health.HP = health.next;
+			if (health.HP > 0) player.dead = null;
 		}
-		else health.mesh.scale.y = (health.HP/health.full<1/100?1/100:health.HP/health.full);
-		if (time - health.prev > .3) {
-			if (health.mesh.scale.y > 0.5) health.mesh.material.color.set(0x00ff00);
-			else if (health.mesh.scale.y > 0.2) health.mesh.material.color.set(0xffff00);
-			else health.mesh.material.color.set(0xff6600);
+		if (!player.dead) {
+			if (player.position.y<-500 || health.HP <= 0) {
+				player.sfx['death'].play()
+				// scene.remove(player);
+				player.game.fire.timer = null;
+				player.charge.a.scale.set(1, 1, 1); player.charge.b.scale.set(1, 1, 1);
+				player.position.set(1000, 0, 0);
+				health.HP = 0; health.mesh.visible = false;
+				for (var plyr in players) if (players[plyr] === player) 
+					{players[plyr].dead = time; break;}
+			}
+			else health.mesh.scale.y = (health.HP/health.full<1/100?1/100:health.HP/health.full);
+			if (time - health.prev > .3) {
+				if (health.mesh.scale.y > 0.5) health.mesh.material.color.set(0x00ff00);
+				else if (health.mesh.scale.y > 0.2) health.mesh.material.color.set(0xffff00);
+				else health.mesh.material.color.set(0xff6600);
+			}
 		}
 		health.mesh.position.y += 20;
 		
@@ -810,8 +870,14 @@
 	function animate() {
 		/*
 		if (X.Weapon.Saber && user) {
-			if (user.bones.l_hand.children.length===0) user.bones.l_hand.add(X.Weapon.Saber);
-			X.Weapon.Saber.rotation.y = Math.PI*-.8
+			scene.add(X.Weapon.Saber);
+			X.Weapon.Saber.position.y = 30;
+			scene.add(X.Weapon.glow)
+			X.Weapon.glow.position.y = 50;
+
+			X.Weapon.glow.position.x = 4;
+			X.Weapon.glow.rotation.y = Math.PI/-2
+			X.Weapon.glow.material.uniforms.viewVector.value = new THREE.Vector3().subVectors( camera.position, X.Weapon.glow.getWorldPosition() );
 		}
 		*/
 		var delta = clock.getDelta();
@@ -841,6 +907,7 @@
 		for (var plyr in players) {
 			if (players[plyr].game.health.HP<=0 && players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {
 				//scene.add(players[plyr]);
+				players[plyr].game.dmg_from = null;
 				players[plyr].game.health.mesh.visible = true;
 				players[plyr].game.health.HP = players[plyr].game.health.full;//scene.add(players[plyr].game.health.mesh);
 				players[plyr].dead = null;
@@ -848,7 +915,10 @@
 				players[plyr].position.set(240*Math.sign(1-2*Math.random()), 220, 0)
 			}
 		}
-
+		if (user && user.dead && user.game.dmg_from) {
+			socket.emit('death_update', user.game.dmg_from);
+			user.game.dmg_from = null;
+		}
 
 		if (socket && socket.id) {
 			socket.emit('update', {player: socket.id,
@@ -858,7 +928,10 @@
 														});
 		}
 
-		for (var plyr in players) updatePlayer(players[plyr], delta);
+		for (var plyr in players) {
+			updatePlayer(players[plyr], delta);
+			if (players[plyr] !== user) console.log(players[plyr].game.health.HP)
+		}
 
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
 			if (scene.children[ob].update_game({delta:delta, scene:scene}) === -1) {
@@ -868,7 +941,7 @@
 		
 		
 		if (chat_timer !== null && clock.getElapsedTime()-chat_timer>=5) {
-			document.getElementById('chatbox').style.display = 'none';
+			$('#chatbox').css('display', 'none');
 			chat_timer = null;
 		}
 		/*
@@ -911,7 +984,6 @@
 			}
 		}
 		*/
-		
 		renderer.render(scene, camera)
 		requestAnimationFrame(animate)
 	}

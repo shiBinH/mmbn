@@ -4,7 +4,8 @@ var X = {
 		Buster: null,
 		Charge1: null,
 		Charge2: null,
-		Saber: null
+		Saber: null,
+		glow: null
 	}
 };
 
@@ -39,6 +40,7 @@ var X = {
 				glow.scale.multiplyScalar(1.3);
 				charge1.add(glow)
 				charge1.purpose = 'projectile';
+				charge1.source = player.socket;
 				charge1.DPS = 30;
 				charge1.velocity = getVel(player, 100);
 				charge1.active = true;
@@ -102,6 +104,7 @@ var X = {
 				glow.scale.set(19, 19, 19)
 				charge2.add(glow)
 				charge2.purpose = 'projectile';
+				charge2.source = player.socket;
 				charge2.DPS = 50;
 				charge2.velocity = getVel(player, 250);
 				charge2.rotation.z = Math.PI/-2
@@ -154,16 +157,19 @@ var X = {
 				charge2.sfx = {
 					fire: newSFX('audio/charge2.wav', .2),
 					hit: newSFX('audio/charge2_hit.wav', .2)
-				}
+				};
 				return charge2;
 			};
 			
 			/*
 			console.log(collada)
 			var blade_mat = customMaterial.clone(true);
-			blade_mat.uniforms.glowColor.value = new THREE.Color(0x00ff99);
-			//var blade_glow = new THREE.Mesh()
+			blade_mat.uniforms.c.value = 0.6; blade_mat.uniforms.p.value = 6;
+			blade_mat.uniforms.glowColor.value = new THREE.Color('yellow');
+			blade_mat.side = THREE.BackSide;
+			var blade_glow = new THREE.Mesh(collada.dae.geometries['saber_blade-mesh'].mesh.geometry3js, blade_mat);
 			X.Weapon.Saber = collada.scene.children[2];
+			X.Weapon.glow = blade_glow;
 			*/
 		}
 	)
@@ -178,6 +184,7 @@ var X = {
 	function Player(name, controls) {
 		this.keysMap = {};
 		this.name = name;
+		this.socket = null;
 		this.name_Group = new THREE.Group();
 		this.purpose = 'player';
 		this.dead = null;
@@ -258,7 +265,8 @@ var X = {
 			fire: {
 				timer: null,
 				able: true
-			}
+			},
+			dmg_from: null
 		};
 		
 		this.action = {
@@ -639,6 +647,7 @@ var X = {
 		if (!proto.prev[player.name]) proto.prev[player.name] = 0;
 		if (time-proto.prev[player.name]<.175) return null;
 		this.purpose = 'projectile';
+		this.source = player.socket;
 		this.DPS = 5;
 		THREE.Mesh.call(this, new THREE.SphereGeometry(4),new THREE.MeshBasicMaterial({color: new THREE.Color(0xffc266)}));
 		
@@ -652,7 +661,7 @@ var X = {
 		this.sfx = {
 			'fire': newSFX('audio/buster.wav', .1),
 			'hit': newSFX('audio/hit.wav', .15)
-		}
+		};
 	};
 	X.Weapon.Buster.prototype = new THREE.Mesh();
 	X.Weapon.Buster.prototype.prev = {};
@@ -701,6 +710,7 @@ var X = {
 				else if (obj.velocity.x<0) dir = -1;
 				else dir = 1;
 				if (obj.DPS >= current.game.flinch.min)current.action.flinch(current.game.clock.getElapsedTime(), dir);
+				if (current.game.health.HP>0) current.game.dmg_from = obj.source;
 				current.game.health.HP -= obj.DPS;
 				current.game.health.mesh.material.color = new THREE.Color('red');
 				current.game.health.prev = current.game.clock.getElapsedTime();
