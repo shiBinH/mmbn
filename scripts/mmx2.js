@@ -930,7 +930,6 @@
 
 		for (var plyr in players) {
 			updatePlayer(players[plyr], delta);
-			if (players[plyr] !== user) console.log(players[plyr].game.health.HP)
 		}
 
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
