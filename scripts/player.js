@@ -63,7 +63,6 @@ var X = {
 						charge1.raycasters[ray].ray.direction.x = (player.game.left?-1:1);
 						charge1.raycasters[ray].ray.origin.copy(charge1.position)
 						charge1.raycasters[ray].ray.origin.x+=(player.game.left?1:-1)*charge1.raycasters[ray].offsets[0]; charge1.raycasters[ray].ray.origin.y+=charge1.raycasters[ray].offsets[1]; charge1.raycasters[ray].ray.origin.z+=charge1.raycasters[ray].offsets[2];
-						console.log(charge1.raycasters[ray].ray.direction.x)
 						var intersections = charge1.raycasters[ray].intersectObjects(data.scene.children, true);
 						for (var obj=0 ; obj<intersections.length ; obj++) {
 							var intersected = intersections[obj];
@@ -134,7 +133,6 @@ var X = {
 						charge2.raycasters[ray].ray.direction.x = (player.game.left?-1:1);
 						charge2.raycasters[ray].ray.origin.copy(charge2.position)
 						charge2.raycasters[ray].ray.origin.x+=(player.game.left?1:-1)*charge2.raycasters[ray].offsets[0]; charge2.raycasters[ray].ray.origin.y+=charge2.raycasters[ray].offsets[1]; charge2.raycasters[ray].ray.origin.z+=charge2.raycasters[ray].offsets[2];
-						console.log(charge2.raycasters[ray].ray.direction.x)
 						var intersections = charge2.raycasters[ray].intersectObjects(data.scene.children, true);
 						for (var obj=0 ; obj<intersections.length ; obj++) {
 							var intersected = intersections[obj];
