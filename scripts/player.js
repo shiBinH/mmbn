@@ -49,7 +49,7 @@ var X = {
 				charge1.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 15),
 													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge1.velocity.x<0?-1:1, 0, 0), 0, 15)
 													];
-				charge1.raycasters[0].offsets = [-3*(charge1.velocity.x<0?-1:1), 5, 0]; charge1.raycasters[1].offsets = [-3*(charge1.velocity.x<0?-1:1), -5, 0];
+				charge1.raycasters[0].offsets = [3, 5, 0]; charge1.raycasters[1].offsets = [3, -5, 0];
 				charge1.update_game = function(data) {
 					if (!charge1.active) return;
 					if (charge1.position.x>data.scene.bounds.right+500) {
@@ -60,8 +60,10 @@ var X = {
 					}
 					else charge1.position.x += charge1.velocity.x * data.delta;
 					for (var ray in charge1.raycasters) {
+						charge1.raycasters[ray].ray.direction.x = (player.game.left?-1:1);
 						charge1.raycasters[ray].ray.origin.copy(charge1.position)
-						charge1.raycasters[ray].ray.origin.x+=charge1.raycasters[ray].offsets[0]; charge1.raycasters[ray].ray.origin.y+=charge1.raycasters[ray].offsets[1]; charge1.raycasters[ray].ray.origin.z+=charge1.raycasters[ray].offsets[2];
+						charge1.raycasters[ray].ray.origin.x+=(player.game.left?1:-1)*charge1.raycasters[ray].offsets[0]; charge1.raycasters[ray].ray.origin.y+=charge1.raycasters[ray].offsets[1]; charge1.raycasters[ray].ray.origin.z+=charge1.raycasters[ray].offsets[2];
+						console.log(charge1.raycasters[ray].ray.direction.x)
 						var intersections = charge1.raycasters[ray].intersectObjects(data.scene.children, true);
 						for (var obj=0 ; obj<intersections.length ; obj++) {
 							var intersected = intersections[obj];
@@ -113,7 +115,7 @@ var X = {
 				charge2.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 32),
 													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 32)
 													];
-				charge2.raycasters[0].offsets = [-16*(charge2.velocity.x<0?-1:1), 15, 0]; charge2.raycasters[1].offsets = [-16*(charge2.velocity.x<0?-1:1), -15, 0];
+				charge2.raycasters[0].offsets = [16, 15, 0]; charge2.raycasters[1].offsets = [16, -15, 0];
 				charge2.active = true;
 				charge2.update_game = function(data) {
 					if (!charge2.active) return;
@@ -129,8 +131,10 @@ var X = {
 					}
 					else charge2.position.x += charge2.velocity.x * data.delta;
 					for (var ray in charge2.raycasters) {
+						charge2.raycasters[ray].ray.direction.x = (player.game.left?-1:1);
 						charge2.raycasters[ray].ray.origin.copy(charge2.position)
-						charge2.raycasters[ray].ray.origin.x+=charge2.raycasters[ray].offsets[0]; charge2.raycasters[ray].ray.origin.y+=charge2.raycasters[ray].offsets[1]; charge2.raycasters[ray].ray.origin.z+=charge2.raycasters[ray].offsets[2];
+						charge2.raycasters[ray].ray.origin.x+=(player.game.left?1:-1)*charge2.raycasters[ray].offsets[0]; charge2.raycasters[ray].ray.origin.y+=charge2.raycasters[ray].offsets[1]; charge2.raycasters[ray].ray.origin.z+=charge2.raycasters[ray].offsets[2];
+						console.log(charge2.raycasters[ray].ray.direction.x)
 						var intersections = charge2.raycasters[ray].intersectObjects(data.scene.children, true);
 						for (var obj=0 ; obj<intersections.length ; obj++) {
 							var intersected = intersections[obj];

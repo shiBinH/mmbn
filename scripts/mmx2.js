@@ -10,6 +10,7 @@
 	var clientKeys;
 	var chat_timer;
 	var settingControls;
+	var respawn_delay;
 
 	init();
 	animate();
@@ -23,6 +24,7 @@
 		objects = [];
 		players = {};
 		temp = 0;
+		respawn_delay = null;
 		
 		scene = new THREE.Scene();
 		scene.bounds = {left: -1000, right: 1000};
@@ -209,7 +211,7 @@
 				socket.on('update_user', function(data) {
 					players[data.player].keysMap = data.keysMap;
 					if (data.player === socket.id) return;
-					players[data.player].game.health.next = data.hp;
+					if (!respawn_delay) players[data.player].game.health.next = data.hp;
 					players[data.player].position.set(data.position.x, data.position.y, data.position.z);
 				});
 				socket.on('player_disconnect', function(id) {
@@ -228,10 +230,8 @@
 				});
 				socket.on('scoreboard_update', function(data) {
 					$scoreboard.find('#'+data.player).find('[data-purpose="current"]').text(data.scores.current);
-					//$scoreboard.find('#'+data.player).find('[data-purpose="total"]').text(data.scores.total);
 				});
 				socket.on('victory', function(data) {
-					//$scoreboard.find('#'+data.player).find('[data-purpose="total"]').text(data.scores.total);
 					$scoreboard.find('#'+data.player).find('[data-purpose="wins"]').text(data.scores.wins);
 					$scoreboard.find('[data-purpose="current"]').text(0);
 					var $h2 = $('<h2>');
@@ -245,6 +245,7 @@
 				socket.on('new_round', function() {
 					$scoreboard.find('[data-purpose="current"]').text(0);
 					user.game.dmg_from = null;
+					respawn_delay = clock.getElapsedTime();
 					for (plyr in players) {
 						players[plyr].game.dmg_from = null;
 						players[plyr].game.health.mesh.visible = true;
@@ -252,6 +253,7 @@
 						players[plyr].game.health.HP = players[plyr].game.health.full;//scene.add(players[plyr].game.health.mesh);
 						players[plyr].dead = null;
 						players[plyr].velocity.set(0, 0, 0)
+						
 					}
 					user.position.set(240-Math.random()*480, 270, 0);
 				})
@@ -881,6 +883,7 @@
 		}
 		*/
 		var delta = clock.getDelta();
+		if (clock.getElapsedTime()-respawn_delay>=1) respawn_delay = null;
 
 		if (camera.position.z < 400 && user) {
 			camera.position.z += 2;
