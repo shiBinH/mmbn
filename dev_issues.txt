@@ -1,5 +1,5 @@
 
 
-- land animation, wall jump animation, standing fire animation
-
-- kill keeping
+- land animation, standing fire animation
+- autoroom join
+- link to join room

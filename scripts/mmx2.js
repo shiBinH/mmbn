@@ -422,7 +422,6 @@
 		player.bounds.leftFoot.ray.origin.x += -7; player.bounds.leftFoot.ray.origin.y += 0;
 
 		if (player.controls.enabled && keysMap[player.controls.fire]) {
-
 			if (player.game.fire.timer === null) player.game.fire.timer = time;
 			else if (time - player.game.fire.timer> 2.5) {
 				player.sfx['charging_done'].play();

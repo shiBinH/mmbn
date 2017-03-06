@@ -60,33 +60,42 @@ var X = {
 					}
 					else charge1.position.x += charge1.velocity.x * data.delta;
 					for (var ray in charge1.raycasters) {
-						charge1.raycasters[ray].ray.direction.x = (player.game.left?-1:1);
+						charge1.raycasters[ray].ray.direction.x = (charge1.velocity.x<0?-1:1);
 						charge1.raycasters[ray].ray.origin.copy(charge1.position)
-						charge1.raycasters[ray].ray.origin.x+=(player.game.left?1:-1)*charge1.raycasters[ray].offsets[0]; charge1.raycasters[ray].ray.origin.y+=charge1.raycasters[ray].offsets[1]; charge1.raycasters[ray].ray.origin.z+=charge1.raycasters[ray].offsets[2];
+						charge1.raycasters[ray].ray.origin.x+=(charge1.velocity.x<0?1:-1)*charge1.raycasters[ray].offsets[0]; charge1.raycasters[ray].ray.origin.y+=charge1.raycasters[ray].offsets[1]; charge1.raycasters[ray].ray.origin.z+=charge1.raycasters[ray].offsets[2];
 						var intersections = charge1.raycasters[ray].intersectObjects(data.scene.children, true);
 						for (var obj=0 ; obj<intersections.length ; obj++) {
 							var intersected = intersections[obj];
 							if (intersected.object.purpose !== 'surface') {
 								var current = intersections[obj].object;
 								if (hitPlayer(current, charge1) === -1) {
-									charge1.position.x = data.scene.bounds.right+600;
-									charge1.active = false;
+									charge1.ondeath(data);
 									return;
 								}
 							} else {
-								charge1.active = false;
-								charge1.position.x = data.scene.bounds.right+600;
+								charge1.ondeath(data);
 								return;
 							}
 						}
 
 						if (charge1.position.x<data.scene.bounds.left || charge1.position.x>data.scene.bounds.right) {
-							charge1.position.x = data.scene.bounds.right+600;
-							charge1.active = false;
+							charge1.ondeath(data);
 							return;
 						}
 					}
 				};
+				charge1.ondeath = function(data) {
+					var geometry = new THREE.CircleGeometry(6, 12);
+					var mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: new THREE.Color(0x00ff11), transparent: true, opacity: 0.5}));
+					mesh.position.copy(charge1.position);
+					mesh.update_game = function(dat) {
+						if (this.scale.x<.01) return -1;
+						this.scale.subScalar(0.1);
+					}
+					data.scene.add(mesh);
+					charge1.position.x = data.scene.bounds.right+600;
+					charge1.active = false;
+				}
 				charge1.sfx = {
 					'hit': newSFX('audio/hit.wav', .15),
 					'fire': newSFX('audio/charge1.wav', 0.2)
@@ -117,7 +126,18 @@ var X = {
 				charge2.raycasters[0].offsets = [16, 15, 0]; charge2.raycasters[1].offsets = [16, -15, 0];
 				charge2.active = true;
 				charge2.update_game = function(data) {
+					if (glow.scale.x>.01) {
+						glow.scale.x -= 3
+						glow.scale.z += 3;
+						glow.position.y += (charge2.velocity.x<0?-1:1)*charge2.velocity.x*.002
+					} else {
+						glow.position.set (0, 0, 0)
+					}
 					if (!charge2.active) return;
+					glow.position.set(0, 0,0)
+					glow.rotation.z = 0;
+					glow.scale.set(1, 1, 1);
+					
 					var offset = Math.sin(n);
 					n += 0.1;
 					glow.scale.set(19, 19+Math.sin(n), 19);
@@ -130,32 +150,36 @@ var X = {
 					}
 					else charge2.position.x += charge2.velocity.x * data.delta;
 					for (var ray in charge2.raycasters) {
-						charge2.raycasters[ray].ray.direction.x = (player.game.left?-1:1);
+						charge2.raycasters[ray].ray.direction.x = (charge2.velocity.x<0?-1:1);
 						charge2.raycasters[ray].ray.origin.copy(charge2.position)
-						charge2.raycasters[ray].ray.origin.x+=(player.game.left?1:-1)*charge2.raycasters[ray].offsets[0]; charge2.raycasters[ray].ray.origin.y+=charge2.raycasters[ray].offsets[1]; charge2.raycasters[ray].ray.origin.z+=charge2.raycasters[ray].offsets[2];
+						charge2.raycasters[ray].ray.origin.x+=(charge2.velocity.x<0?1:-1)*charge2.raycasters[ray].offsets[0]; charge2.raycasters[ray].ray.origin.y+=charge2.raycasters[ray].offsets[1]; charge2.raycasters[ray].ray.origin.z+=charge2.raycasters[ray].offsets[2];
 						var intersections = charge2.raycasters[ray].intersectObjects(data.scene.children, true);
 						for (var obj=0 ; obj<intersections.length ; obj++) {
 							var intersected = intersections[obj];
 							if (intersected.object.purpose !== 'surface') {
 								var current = intersections[obj].object;
 								if (hitPlayer(current, charge2) === -1) {
-									charge2.position.x = data.scene.bounds.right+600;
-									charge2.active = false;
+									charge2.ondeath(data);
 									return;
 								}
 							} else {
-								charge2.active = false;
-								charge2.position.x = data.scene.bounds.right+600;
+								charge2.ondeath(data);
 								return;
 							}
 						}
 						if (charge2.position.x<data.scene.bounds.left || charge2.position.x>data.scene.bounds.right) {
-							charge2.position.x = data.scene.bounds.right+600;
-							charge2.active = false;
+							charge2.ondeath(data);
 							return;
 						}
 					}
 				};
+				charge2.ondeath = function(data) {
+					charge2.active = false;
+					var origX = charge2.position.x,
+							origY = charge2.position.y;
+					charge2.position.x = data.scene.bounds.right+600;
+					glow.position.set((charge2.velocity.x<0?-1:1)*(charge2.position.y)+origY*(charge2.velocity.x<0?1:-1), (-charge2.position.x+origX)*(charge2.velocity.x<0?-1:1), 0)
+				}
 				charge2.sfx = {
 					fire: newSFX('audio/charge2.wav', .2),
 					hit: newSFX('audio/charge2_hit.wav', .2)
@@ -673,16 +697,31 @@ var X = {
 		var intersections = this.raycaster.intersectObjects(data.scene.children, true);
 		for (var obj=0 ; obj<intersections.length ; obj++) {
 			if (intersections[obj].object.purpose === 'surface') {
+				this.ondeath(data);
 				return -1;
 			} else {
 				var current = intersections[obj].object;
-				if (hitPlayer(current, this)) return -1;
+				if (hitPlayer(current, this)) {
+					this.ondeath(data)
+					return -1;
+				}
 			}
 		}
 		if (this.position.x<data.scene.bounds.left || this.position.x>data.scene.bounds.right) {
+			this.ondeath(data);
 			return -1;
 		}
-	};
+	}
+	X.Weapon.Buster.prototype.ondeath = function(data) {
+		var geometry = new THREE.CircleGeometry(4, 16)
+		var mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: 0xf4d942}));
+		mesh.position.copy(this.position);
+		mesh.update_game = function(data) {
+			if (mesh.scale.x<.01) data.scene.remove(mesh);
+			else mesh.scale.subScalar(.05);
+		}
+		data.scene.add(mesh)
+	}
 	
 	function getPos(player, n) {
 		var rx = player.bones.r_shoulder.getWorldPosition().x;
