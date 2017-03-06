@@ -11,6 +11,7 @@
 	var chat_timer;
 	var settingControls;
 	var respawn_delay;
+	var pathname;
 
 	init();
 	animate();
@@ -25,6 +26,7 @@
 		players = {};
 		temp = 0;
 		respawn_delay = null;
+		pathname = window.location.href.substring(window.location.href.indexOf('room=')+5);
 		
 		scene = new THREE.Scene();
 		scene.bounds = {left: -1000, right: 1000};
@@ -125,6 +127,7 @@
 		var $connect = $('#connect');
 		var $announce_center = $('#announce_center');
 		var $scoreboard = $('#scoreboard');
+		
 
 		divSetup();
 		function divSetup() {
@@ -175,19 +178,21 @@
 				$set_msg.css('display', 'none');
 				this.style.display =  'none';
 				$display.css('display', 'none');
-				$connect.css('display','block');
+				if (!socket) $connect.css('display','block');
+				$connect.find('button').click()
 			})	
 			$connect.css('top', (window.innerHeight/2 - 100/2));
 			$connect.css('left',(window.innerWidth/2 - 300/2));
 			$connect.on('click', function(e) {
 				if (e.target.type !== 'button') return;
 				this.style.display = 'none';
-				var roomName = this.room.value + '';
+				//	var roomName = this.room.value + '';
 				socket = io();
 				socket.on('connect', function(){
+					history.pushState(null, null, '/?room=' + socket.id);
 					players[socket.id] = user;
 					user.socket = socket.id;
-					socket.emit('new_player', {room: roomName, player: socket.id, name: user.name, controls: user.controls});
+					socket.emit('new_player', {room: pathname||socket.id, player: socket.id, name: user.name, controls: user.controls});
 					var $newplayer = $('<tr>', {id: socket.id});
 					$newplayer.append('<th>'+user.name+'</th>').append('<td data-purpose="current">'+0+'</td>')/*.append('<td data-purpose="total">'+0+'</td>')*/.append('<td data-purpose="wins">'+0+'</td>');
 					$newplayer.find('th:first').css('color', 'green');
@@ -259,6 +264,8 @@
 				})
 			})
 		}
+
+		
 		document.addEventListener('keydown', function(e) {
 			var key = e.keyCode;
 

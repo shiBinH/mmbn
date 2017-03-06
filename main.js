@@ -15,12 +15,34 @@ var players = [];
 const server = http.createServer(function(req, res) {
 	let url = req.url;
 	let method = req.method;
-
-	fs.readFile(url.substring(1), function(err, contents) {
-		if (err) res.end('err:' + err);
-		res.statusCode = 200;
-		res.end(contents);
-	})
+	if (url.substring(0, 7)==='/?room=' && players[url.substring(7)]) {
+		fs.readFile('mmx.html', function(err, contents) {
+			if (err) {
+				res.writeHead(302, {
+					'Location': '/'
+				});
+				res.end();
+			}
+			res.statusCode = 200;
+			res.end(contents);
+		})
+	}
+	else {
+		if (url === '/') {
+			url += 'mmx.html';
+		}
+		fs.readFile(url.substring(1), function(err, contents) {
+			if (err) {
+				console.log(err);
+				res.writeHead(302, {
+					'Location': '/'
+				});
+				res.end();
+			}
+			res.statusCode = 200;
+			res.end(contents);
+		})
+	}
 });
 
 
@@ -35,8 +57,8 @@ io.on('connection', function(c) {
 	});
 })
 
-const testNS = io.of('/');
-testNS.on('connection', function(c) {
+const defaultNS = io.of('/');
+defaultNS.on('connection', function(c) {
 	console.log('server: connected to "/" namespace');
 	
 	c.on('new_player', function(data) {
