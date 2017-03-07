@@ -59,6 +59,7 @@ body {
 	border: 1px solid grey;
 	max-height: 150px;
 	overflow: auto;
+	display: none;
 }
 
 #chatinput {
