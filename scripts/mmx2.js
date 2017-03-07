@@ -127,6 +127,8 @@
 		var $connect = $('#connect');
 		var $announce_center = $('#announce_center');
 		var $scoreboard = $('#scoreboard');
+		var $infobtn = $('#info-btn')
+		var $info = $('#info')
 		
 
 		divSetup();
@@ -197,6 +199,7 @@
 					$newplayer.append('<th>'+user.name+'</th>').append('<td data-purpose="current">'+0+'</td>')/*.append('<td data-purpose="total">'+0+'</td>')*/.append('<td data-purpose="wins">'+0+'</td>');
 					$newplayer.find('th:first').css('color', 'green');
 					$scoreboard.find('tbody').append($newplayer);
+					$infobtn.show();
 				});
 				socket.on('announcement', function(data) {
 					console.log(data);
@@ -261,6 +264,14 @@
 						
 					}
 					user.position.set(240-Math.random()*480, 270, 0);
+				})
+				$info.css('left', window.innerWidth-300);
+				$infobtn.css('left', window.innerWidth-18);
+				$infobtn.mouseover(function(e){
+					$info.show();
+				})
+				$info.on('mouseout', function(e) {
+					$info.hide();
 				})
 			})
 		}
