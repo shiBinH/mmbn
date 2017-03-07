@@ -201,13 +201,20 @@ var X = {
 	)
 	
 	
-	X.Player = function(name, controls) {
+	X.Player = function(name, controls, plyrN) {
 		var player = new THREE.Group();
-		Player.call(player, name, controls);
+		Player.call(player, name, controls, plyrN);
 		return player;
 	};
+	var textureloader = new THREE.TextureLoader();
+	var colors = [[textureloader.load('../collada/body.png'), textureloader.load('../collada/helmet.png'), textureloader.load('../collada/blue.png'), textureloader.load('../collada/arm_blaster.png')],
+								[textureloader.load('../collada/body_orange.png'), textureloader.load('../collada/helmet_orange.png'), textureloader.load('../collada/blue_orange.png'), textureloader.load('../collada/arm_blaster_orange.png')],
+								[textureloader.load('../collada/body_green.png'), textureloader.load('../collada/helmet_green.png'), textureloader.load('../collada/blue_green.png'), textureloader.load('../collada/arm_blaster_green.png')],
+								[textureloader.load('../collada/body_black.png'), textureloader.load('../collada/helmet_black.png'), textureloader.load('../collada/blue_black.png'), textureloader.load('../collada/arm_blaster_black.png')]
+							 ];
+	var colors2 = [0x00A3FF, 0xffc90e, 0x4dff4d, 0x9f5000];
 
-	function Player(name, controls) {
+	function Player(name, controls, plyrN) {
 		this.keysMap = {};
 		this.name = name;
 		this.socket = null;
@@ -317,9 +324,22 @@ var X = {
 		this.charge1 = null;
 		this.charge2 = null;
 		
-
-		init(this);
-		function init(outer) {
+		this.color_change = function(n) {
+			this.bones.body.children[5].children[0].material.map = colors[n%4][0]
+			this.bones.body.children[5].children[0].material.map.needsUpdate = true;
+			this.bones.head.getObjectByName('helmet').children[0].material.map = colors[n%4][1]
+			this.bones.head.getObjectByName('helmet').children[0].material.map.needsUpdate = true;
+			this.bones.r_knee.getObjectByName('leg').children[0].material.map = colors[n%4][2]
+			this.bones.r_knee.getObjectByName('leg').children[0].material.map.needsUpdate = true;
+			this.bones.r_ankle.getObjectByName('boots').children[0].material.map = colors[n%4][2]
+			this.bones.r_ankle.getObjectByName('boots').children[0].material.map.needsUpdate = true;
+			this.bones.body.getObjectByName('arm_blaster').children[0].material.map = colors[n%4][3]
+			this.bones.body.getObjectByName('arm_blaster').children[0].material.map.needsUpdate = true;
+			this.bones.r_shoulder.children[1].material.color = this.bones.l_shoulder.children[1].material.color = this.bones.r_leg.children[1].material.color = this.bones.l_leg.children[1].material.color = this.bones.body.children[4].children[1].material.color = new THREE.Color(colors2[n%4])
+		}
+		
+		init(this, plyrN);
+		function init(outer, n) {
 			var clips = {};
 
 			var lengths = {
@@ -338,6 +358,7 @@ var X = {
 			}
 			var bones = [];
 			for (var i=0 ; i<15 ; i++) bones.push(new THREE.Bone());
+			var plyrN = n;
 			var loader = new THREE.ColladaLoader();
 			loader.load(
 				'collada/collection.dae',
@@ -353,7 +374,7 @@ var X = {
 					var clone = bones[3].clone(true);
 					clone.children[0].add(mesh)
 					clone.visible = false;
-					clone.children[1].material = new THREE.MeshStandardMaterial({color: 0x00A3FF});
+					clone.children[1].material = new THREE.MeshStandardMaterial({color: bones[3].children[1].material.color});
 					clone.children[1].position.y = -6;
 					clone.name = 'clone'
 					clone.timer = new THREE.Clock();
@@ -388,6 +409,19 @@ var X = {
 					mesh.translateZ(-5.5)
 					bones[10].add(mesh);
 					bones[13].add(mesh.clone(true))
+					
+					if (plyrN !== undefined) {
+						bones[0].children[5].children[0].material.map = colors[plyrN%4][0]
+						bones[0].children[5].children[0].material.map.needsUpdate = true;
+						bones[1].getObjectByName('helmet').children[0].material.map = colors[plyrN%4][1]
+						bones[1].getObjectByName('helmet').children[0].material.map.needsUpdate = true;
+						bones[10].getObjectByName('leg').children[0].material.map = colors[plyrN%4][2]
+						bones[10].getObjectByName('leg').children[0].material.map.needsUpdate = true;
+						bones[11].getObjectByName('boots').children[0].material.map = colors[plyrN%4][2]
+						bones[11].getObjectByName('boots').children[0].material.map.needsUpdate = true;
+						bones[0].getObjectByName('arm_blaster').children[0].material.map = colors[plyrN%4][3]
+						bones[0].getObjectByName('arm_blaster').children[0].material.map.needsUpdate = true;
+					}
 
 					var mixer, clip, action;
 
@@ -563,7 +597,7 @@ var X = {
 					geometry.skinIndices.push(new THREE.Vector4(0, 1, 2, 0));
 					geometry.skinWeights.push(new THREE.Vector4(0, 0, 1, 0));
 				}
-			}
+			}//	green:0x4dff4d, blue:0x00A3FF, orange: 0xffc90e, black: 0x9f5000
 			mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial({skinning: true, color: 0x00A3FF}))
 			skeleton = new THREE.Skeleton([bones[3], bones[4], bones[5]]); 
 			mesh.add(bones[3])
@@ -626,6 +660,15 @@ var X = {
 
 			bones[3].position.y = bones[6].position.y = 0;
 			bones[1].position.y -= 1;
+			
+			
+			
+			if (plyrN) {
+				var colors2 = [0x00A3FF, 0xffc90e, 0x4dff4d, 0x9f5000];
+				bones[3].children[1].material.color = bones[6].children[1].material.color = bones[9].children[1].material.color = bones[12].children[1].material.color = new THREE.Color(colors2[plyrN]);
+				if (bones[0].getObjectByName('clone')) bones[0].getObjectByName('clone').children[1].material.color = new THREE.Color(colors2[plyrN%4]);
+			}
+			
 
 			outer.add(bones[0])
 			outer.scale.multiplyScalar(1.5)
@@ -674,10 +717,10 @@ var X = {
 		if (time-proto.prev[player.name]<.175) return null;
 		this.purpose = 'projectile';
 		this.source = player.socket;
-		this.DPS = 5;
+		this.DPS = 8;
 		THREE.Mesh.call(this, new THREE.SphereGeometry(4),new THREE.MeshBasicMaterial({color: new THREE.Color(0xffc266)}));
 		
-		this.velocity = getVel(player);
+		this.velocity = getVel(player, 100);
 		this.position.copy(getPos(player, 1))
 		this.raycaster = new THREE.Raycaster(new THREE.Vector3(),
 																				 new THREE.Vector3(this.velocity.x<0?-1:1, 0, 0),

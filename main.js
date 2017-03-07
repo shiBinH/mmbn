@@ -3,6 +3,7 @@ const fs = require('fs');
 const socketio = require('socket.io');
 
 var hostname;
+var time = new Date();
 
 if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
 else hostname =  process.env.HOSTNAME || '192.168.1.6';
@@ -69,11 +70,15 @@ defaultNS.on('connection', function(c) {
 		}
 				 
 		players[data.player] = data;
+		players[data.player].color = io.nsps['/'].adapter.rooms[data.room].length-1;
 		players[data.player].score = {current: 0, total: 0, wins: 0};
-		c.to(data.room).emit('add_player', data);
+		
+		c.emit('color_change', players[data.player]);
+		c.to(data.room).emit('add_player', players[data.player]);
 		console.log(io.nsps['/'].adapter.rooms)
 	});
 	c.on('update', function(data) {
+		//console.log('server: update from ' + players[c.id.substring(c.id.indexOf('#')+1)].name)
 		c.emit('update_user', data);
 		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('update_user', data);
 	});
@@ -107,7 +112,6 @@ defaultNS.on('connection', function(c) {
 		}
 		c.to(players[c.id.substring(c.id.indexOf('#')+1)].room).emit('new_round');
 	})
-
 });
 
 

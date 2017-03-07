@@ -2,7 +2,6 @@
 	
 	var camera, scene, renderer;
 	var clock;
-	var objects;
 	var players;
 	var socket;
 	var temp;
@@ -14,7 +13,9 @@
 	var pathname;
 
 	init();
-	animate();
+	//animate();
+	window.setInterval(game_update, 1000/60);
+	//animate2();
 	
 	function init() {
 		var keys;
@@ -22,11 +23,10 @@
 				gridhelper, axis;
 		clock = new THREE.Clock();
 		clientKeys = {};
-		objects = [];
 		players = {};
 		temp = 0;
 		respawn_delay = null;
-		pathname = window.location.href.substring(window.location.href.indexOf('room=')+5);
+		pathname = (window.location.href.indexOf('?room=')!==-1?window.location.href.substring(window.location.href.indexOf('room=')+5): '');
 		
 		scene = new THREE.Scene();
 		scene.bounds = {left: -1000, right: 1000};
@@ -53,69 +53,69 @@
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(-170, -60, 0);
-		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(50, 40, 100);
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(170, -60, 0);
-		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(30, 40, 80);
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(-150, 300, 0);
-		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(30, 40, 80);
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.purpose = 'surface';
 		mesh.position.set(150, 300, 0);
-		scene.add(mesh); objects.push(mesh); 	mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(350, 40, 100);
 		mesh = new THREE.Mesh(geometry, material)
 		mesh.position.y = -170;
 		mesh.purpose = 'surface';
-		scene.add(mesh); objects.push(mesh) ;mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(60, 90, 100);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 160, 0);
-		scene.add(mesh); objects.push(mesh);mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(500, 600, 100);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.position.set(-520, 0, 0)
 		mesh.purpose = 'surface'
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		mesh = mesh.clone(true)
 		mesh.position.x *= -1;
 		mesh.purpose = 'surface'
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(50, 40, 80);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(-255, 85, 0);
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		mesh = mesh.clone(true);
 		mesh.position.x *= -1;
 		mesh.purpose = 'surface';
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(40, 35, 80);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 0, 0);
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(1200, 300, 100);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(0, 450, 0);
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		geometry = new THREE.BoxGeometry(50, 80, 80);
 		mesh = new THREE.Mesh(geometry, material);
 		mesh.purpose = 'surface';
 		mesh.position.set(-100, -340, 0);
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		mesh = mesh.clone(true);
 		mesh.purpose = 'surface';
 		mesh.position.x *= -1;
-		scene.add(mesh); objects.push(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		scene.add(mesh); mesh.matrixAutoUpdate = false; mesh.updateMatrix();
 		
 		var $setup = $('#setup');
 		var $display = $('#set_display');
@@ -190,8 +190,8 @@
 				this.style.display = 'none';
 				//	var roomName = this.room.value + '';
 				socket = io();
-				socket.on('connect', function(){
-					history.pushState(null, null, '/?room=' + socket.id);
+				socket.on('connect', function(msg){
+					if (!pathname) history.pushState(null, null, '/?room=' + socket.id);
 					players[socket.id] = user;
 					user.socket = socket.id;
 					socket.emit('new_player', {room: pathname||socket.id, player: socket.id, name: user.name, controls: user.controls});
@@ -206,10 +206,10 @@
 				});
 				socket.on('add_player', function(data) {
 					if (players[data.player]) return;
-					players[data.player] = new X.Player(data.name, data.controls);
+					players[data.player] = new X.Player(data.name, data.controls, data.color);
 					players[data.player].position.set(0, 50, 0);
 					players[data.player].socket = data.player;
-					scene.add(players[data.player]); objects.push(players[data.player]);
+					scene.add(players[data.player]);
 					scene.add(players[data.player].game.health.mesh)
 					scene.add(players[data.player].name_Group);
 					var $newplayer = $('<tr>', {id: data.player});
@@ -223,6 +223,13 @@
 					players[data.player].position.set(data.position.x, data.position.y, data.position.z);
 				});
 				socket.on('player_disconnect', function(id) {
+					var $msg = $('<span>');
+					$msg.append(players[id].name + ' has disconnected.').css('color', 'red');
+					$chatinput.before($msg);
+					$chatbox.css('display', 'inline');
+					$chatbox.scrollTop(10000);
+					chat_timer = clock.getElapsedTime();
+					if ($chatbox.children.length > 11) $chatbox.remove($chatbox.children(':first'));
 					scene.remove(players[id]); scene.remove(players[id].game.health.mesh); scene.remove(players[id].name_Group)
 					$scoreboard.find('#'+id).remove();
 					delete players[id];
@@ -265,6 +272,9 @@
 					}
 					user.position.set(240-Math.random()*480, 270, 0);
 				})
+				socket.on('color_change', function(data) {
+					players[data.player].color_change(data.color);
+				})
 				$info.css('left', window.innerWidth-300);
 				$infobtn.css('left', window.innerWidth-18);
 				$infobtn.mouseover(function(e){
@@ -302,13 +312,14 @@
 				e.preventDefault();
 				$scoreboard.show();
 			}
+			/*
 			if (key === 82 && user && user.controls.enabled) {
 				if (user && user.game.health.HP<=0) scene.add(user);
 				user.game.health.mesh.visible = true;
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
 				user.position.set(240*Math.sign(1-2*Math.random()), 220, 0)
-			}
+			}*/
 			if (key === 27 && $chatinput.css('display') !== 'none') $chatinput.css('display', 'none');
 			if (key === 13 && socket) {
 				if ($chatinput.css('display') === 'none') {
@@ -419,7 +430,6 @@
 		chat_timer = null;
 		document.getElementById("audio-background").volume = 0.3
 		renderer.render(scene, camera)
-		
 	}
 	
 	function updatePlayer(player, delta) {
@@ -483,7 +493,7 @@
 				else 	{
 					var buster = new X.Weapon.Buster(player);
 					if (buster.purpose === 'projectile') {
-						scene.add(buster); //objects.push(projectile);
+						scene.add(buster);
 						buster.sfx['fire'].pause()
 						buster.sfx['fire'].currentTime = 0;
 						buster.sfx['fire'].play()
@@ -808,8 +818,11 @@
 		else if (time-player.game.flinch.timer-delta<.05) player.velocity.y = 0;
 		
 		if (player === user) {
-			player.position.x += player.velocity.x * delta;
-			player.position.y += player.velocity.y * delta;
+			var dx = player.velocity.x * delta;
+			var dy = player.velocity.y * delta;
+			if (Math.abs(dx)>Math.abs(player.velocity.x*1/60)) player.position.x += player.velocity.x * 1/60
+			else player.position.x += dx;
+			player.position.y += (Math.abs(dy)>Math.abs(player.velocity.y*1/60)?player.velocity.y*1/60:dy);
 		}
 
 		
@@ -963,48 +976,103 @@
 			$('#chatbox').css('display', 'none');
 			chat_timer = null;
 		}
-		/*
-		for (var ob=0 ; ob<objects.length ; ob++) if (objects[ob].update_game) {
-			if (objects[ob].update_game({delta: delta, scene:scene}) === -1) {
-				scene.remove(objects[ob]);
-				objects[ob] = objects[objects.length-1];
-				objects.pop();
+
+		renderer.render(scene, camera)
+		requestAnimationFrame(animate)
+	}
+	
+	function animate2() {
+		if (camera.position.z < 400 && user) {
+			camera.position.z += 2;
+			if (camera.position.y < 55) camera.position.y += .5;
+		}
+		else if (user) {
+			var dif = Math.abs(camera.position.x-user.position.x);
+			if (dif>50) {
+				if (user.position.x>900) camera.position.x = 0;
+				else {
+					camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1);
+					camera.position.x = Math.min(camera.position.x, 100);
+					camera.position.x = Math.max(camera.position.x, -100);
+				}
+			}
+			dif = Math.abs(camera.position.y-user.position.y);
+			if (dif>10) camera.position.y = user.position.y + 10*(camera.position.y>user.position.y?1:-1);
+			//camera.position.y = user.position.y;
+			camera.position.y = Math.max(camera.position.y, -280)
+			camera.position.y = Math.min(camera.position.y, 230)
+		}
+		
+		renderer.render(scene, camera);
+		requestAnimationFrame(animate2);
+	}
+	
+	function game_update() {
+		var delta = clock.getDelta();
+		if (clock.getElapsedTime()-respawn_delay>=1) respawn_delay = null;
+
+		for (var plyr in players) {
+			if (players[plyr].game.health.HP<=0 && players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {
+				//scene.add(players[plyr]);
+				players[plyr].game.dmg_from = null;
+				players[plyr].game.health.mesh.visible = true;
+				players[plyr].game.health.HP = players[plyr].game.health.full;//scene.add(players[plyr].game.health.mesh);
+				players[plyr].dead = null;
+				players[plyr].velocity.set(0, 0, 0)
+				players[plyr].position.set(240*Math.sign(1-2*Math.random()), 220, 0)
+			}
+		}
+		if (user && user.dead && user.game.dmg_from) {
+			socket.emit('death_update', user.game.dmg_from);
+			user.game.dmg_from = null;
+		}
+
+		if (socket && socket.id) {
+			socket.emit('update', {player: socket.id,
+														 hp: user.game.health.HP, 
+														 keysMap: clientKeys,
+														 position: {x:user.position.x, y:user.position.y, z:user.position.z}
+														});
+		}
+
+		for (var plyr in players) {
+			updatePlayer(players[plyr], delta);
+		}
+
+		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
+			if (scene.children[ob].update_game({delta:delta, scene:scene}) === -1) {
+				scene.remove(scene.children[ob]);
 			}
 		}
 		
-		var blockObjs = [];
-		for (var plyr=0 ; plyr<players.length ; plyr++) if (!players[plyr].dead) blockObjs = blockObjs.concat(viewCheck(players[plyr]));
-		function viewCheck(player) {
-			var camPosition = camera.position.clone()
-			var playerPosition = player.position.clone()
-			playerPosition.sub(camPosition);
-			playerPosition.normalize();
-			var rayc = new THREE.Raycaster(camera.position.clone(), 
-																		 playerPosition
-																		)
-			var ret = [];
-			var intersections = rayc.intersectObjects(scene.children);
-			for (var obj=0 ; obj<intersections.length ; obj++) {
-				if (intersections[obj].object === player) break;
-				ret.push(intersections[obj].object);
-				intersections[obj].object.material.transparent = true;
-				intersections[obj].object.material.opacity = 0.6;
-			}
-			return ret;
+		
+		if (chat_timer !== null && clock.getElapsedTime()-chat_timer>=5) {
+			$('#chatbox').css('display', 'none');
+			chat_timer = null;
 		}
-		for (var i=0 ; i<scene.children.length ; i++) {
-			inner: {
-				for (var j=0 ; j<blockObjs.length ; j++) {
-					if (scene.children[i] === blockObjs[j]) break inner;
+		
+		if (camera.position.z < 400 && user) {
+			camera.position.z += 2;
+			if (camera.position.y < 55) camera.position.y += .5;
+		}
+		else if (user) {
+			var dif = Math.abs(camera.position.x-user.position.x);
+			if (dif>50) {
+				if (user.position.x>900) camera.position.x = 0;
+				else {
+					camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1);
+					camera.position.x = Math.min(camera.position.x, 100);
+					camera.position.x = Math.max(camera.position.x, -100);
 				}
-				if (!scene.children[i].material) break inner;
-				scene.children[i].material.transparent = false;
-				scene.children[i].material.opacity = 1;
 			}
+			dif = Math.abs(camera.position.y-user.position.y);
+			if (dif>10) camera.position.y = user.position.y + 10*(camera.position.y>user.position.y?1:-1);
+			//camera.position.y = user.position.y;
+			camera.position.y = Math.max(camera.position.y, -280)
+			camera.position.y = Math.min(camera.position.y, 230)
 		}
-		*/
-		renderer.render(scene, camera)
-		requestAnimationFrame(animate)
+		
+		renderer.render(scene, camera);
 	}
 	
 	function newSFX(src, vol) {
@@ -1018,7 +1086,7 @@
 	}
 	function addPlayer(id, name, controls) {
 		players[id] = new X.Player(name, controls);
-		scene.add(players[id]); //objects.add(players[id]);
+		scene.add(players[id]); 
 		scene.add(players[id].game.health.mesh)
 	}
 	
