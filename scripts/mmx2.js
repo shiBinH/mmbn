@@ -1010,6 +1010,27 @@
 	function game_update() {
 		var delta = clock.getDelta();
 		if (clock.getElapsedTime()-respawn_delay>=1) respawn_delay = null;
+		
+		if (camera.position.z < 400 && user) {
+			camera.position.z += 2;
+			if (camera.position.y < 55) camera.position.y += .5;
+		}
+		else if (user) {
+			var dif = Math.abs(camera.position.x-user.position.x);
+			if (dif>50) {
+				if (user.position.x>900) camera.position.x = 0;
+				else {
+					camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1);
+					camera.position.x = Math.min(camera.position.x, 100);
+					camera.position.x = Math.max(camera.position.x, -100);
+				}
+			}
+			dif = Math.abs(camera.position.y-user.position.y);
+			if (dif>10) camera.position.y = user.position.y + 10*(camera.position.y>user.position.y?1:-1);
+			//camera.position.y = user.position.y;
+			camera.position.y = Math.max(camera.position.y, -280)
+			camera.position.y = Math.min(camera.position.y, 230)
+		}
 
 		for (var plyr in players) {
 			if (players[plyr].game.health.HP<=0 && players[plyr].dead && players[plyr].game.clock.getElapsedTime()-players[plyr].dead>5) {
@@ -1051,26 +1072,7 @@
 			chat_timer = null;
 		}
 		
-		if (camera.position.z < 400 && user) {
-			camera.position.z += 2;
-			if (camera.position.y < 55) camera.position.y += .5;
-		}
-		else if (user) {
-			var dif = Math.abs(camera.position.x-user.position.x);
-			if (dif>50) {
-				if (user.position.x>900) camera.position.x = 0;
-				else {
-					camera.position.x = user.position.x + 50*(camera.position.x>user.position.x?1:-1);
-					camera.position.x = Math.min(camera.position.x, 100);
-					camera.position.x = Math.max(camera.position.x, -100);
-				}
-			}
-			dif = Math.abs(camera.position.y-user.position.y);
-			if (dif>10) camera.position.y = user.position.y + 10*(camera.position.y>user.position.y?1:-1);
-			//camera.position.y = user.position.y;
-			camera.position.y = Math.max(camera.position.y, -280)
-			camera.position.y = Math.min(camera.position.y, 230)
-		}
+		
 		
 		renderer.render(scene, camera);
 	}
