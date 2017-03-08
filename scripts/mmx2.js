@@ -276,7 +276,10 @@
 				})
 				socket.on('color_change', function(data) {
 					
-					setTimeout(players[data.player].color_change, 1000, data.color)
+					setTimeout(function(data, players){
+						players[data.player].color_change(data.color);
+					}, 
+						2000, data, players)
 				})
 				$info.css('left', window.innerWidth-300);
 				$infobtn.css('left', window.innerWidth-18);
