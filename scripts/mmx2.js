@@ -766,7 +766,7 @@
 			else if (player.game.wJump_cast && time-player.game.wJump_cast<=.08) player.velocity.y = 0;
 			else if (player.game.onWall && time - player.game.latch_time <= .08) player.velocity.y = 0;
 			else if (player.game.onWall && time - player.game.latch_time > .08){
-				if (player.animation && time-player.game.latch_time-delta<.08) player.animation.slide();
+				if (player.animation && time-player.game.latch_time-delta<.1) player.animation.slide();
 				player.velocity.y = -100;
 				if (isAirborne && time - player.game.latch_time > .12) 
 					player.game.sliding = true;
