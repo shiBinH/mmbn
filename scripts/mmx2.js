@@ -12,6 +12,7 @@
 	var respawn_delay;
 	var pathname;
 	var temp2;
+	var colorN;
 
 	init();
 	//animate();
@@ -276,10 +277,13 @@
 				})
 				socket.on('color_change', function(data) {
 					
+					colorN = data.color;
+					/*
 					setTimeout(function(data, players){
 						players[data.player].color_change(data.color);
 					}, 
 						2000, data, players)
+						*/
 				})
 				$info.css('left', window.innerWidth-300);
 				$infobtn.css('left', window.innerWidth-18);
@@ -1016,6 +1020,12 @@
 	function game_update() {
 		var delta = clock.getDelta();
 		if (clock.getElapsedTime()-respawn_delay>=1) respawn_delay = null;
+		
+		//console.log (Object.keys(user.bones))
+		if (!temp2 && user && user.bones && Object.keys(user.bones).length===15) {
+			user.color_change(colorN);
+			temp2 = true;
+		}
 		
 		if (camera.position.z < 400 && user) {
 			camera.position.z += 2;
