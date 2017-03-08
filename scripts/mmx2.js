@@ -286,7 +286,7 @@
 						*/
 				})
 				$info.css('left', window.innerWidth-300);
-				$infobtn.css('left', window.innerWidth-18);
+				$infobtn.css('left', window.innerWidth-20);
 				$infobtn.mouseover(function(e){
 					$info.show();
 				})
