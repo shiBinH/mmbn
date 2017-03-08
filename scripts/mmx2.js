@@ -514,7 +514,7 @@
 			}
 			
 		}
-		
+
 		if (player.controls.enabled && keysMap[player.controls.left]) {
 			if (!player.game.left && (player.game.dashing||player.game.tap_dashing) && !player.game.dashJ) {player.game.tap_dashing = false;player.game.dashing = false;}
 			player.game.left = true;
@@ -531,7 +531,7 @@
 			}
 			
 		} 
-		if (player.controls.enabled && keysMap[player.controls.right]) {
+		else if (player.controls.enabled && keysMap[player.controls.right]) {
 			if (player.game.left && (player.game.dashing||player.game.tap_dashing) && !player.game.dashJ) {player.game.tap_dashing = false;player.game.dashing = false;}
 			player.game.left = false;
 			player.game.tap.L.prev = 0;
