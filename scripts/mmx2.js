@@ -11,6 +11,7 @@
 	var settingControls;
 	var respawn_delay;
 	var pathname;
+	var temp2;
 
 	init();
 	//animate();
@@ -27,6 +28,7 @@
 		temp = 0;
 		respawn_delay = null;
 		pathname = (window.location.href.indexOf('?room=')!==-1?window.location.href.substring(window.location.href.indexOf('room=')+5): '');
+		temp2 = false;
 		
 		scene = new THREE.Scene();
 		scene.bounds = {left: -1000, right: 1000};
@@ -273,7 +275,8 @@
 					user.position.set(240-Math.random()*480, 270, 0);
 				})
 				socket.on('color_change', function(data) {
-					players[data.player].color_change(data.color);
+					
+					setTimeout(players[data.player].color_change, 1000, data.color)
 				})
 				$info.css('left', window.innerWidth-300);
 				$infobtn.css('left', window.innerWidth-18);
