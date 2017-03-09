@@ -6,7 +6,7 @@ var hostname;
 var time = new Date();
 
 if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
-else hostname =  process.env.HOSTNAME || '192.168.1.6';
+else hostname =  process.env.HOSTNAME || '192.168.1.5';
 const port = process.env.PORT || 4000;
 
 

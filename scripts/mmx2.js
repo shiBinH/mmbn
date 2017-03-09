@@ -17,7 +17,7 @@
 	init();
 	//animate();
 	window.setInterval(game_update, 1000/60);
-	//animate2();
+	animate2();
 	
 	function init() {
 		var keys;
@@ -876,7 +876,6 @@
 		if (!player.dead) {
 			if (player.position.y<-500 || health.HP <= 0) {
 				player.sfx['death'].play()
-				// scene.remove(player);
 				player.game.fire.timer = null;
 				player.charge.a.scale.set(1, 1, 1); player.charge.b.scale.set(1, 1, 1);
 				player.position.set(1000, 0, 0);
@@ -1021,7 +1020,6 @@
 		var delta = clock.getDelta();
 		if (clock.getElapsedTime()-respawn_delay>=1) respawn_delay = null;
 		
-		//console.log (Object.keys(user.bones))
 		if (!temp2 && user && user.bones && Object.keys(user.bones).length===15) {
 			user.color_change(colorN);
 			temp2 = true;
