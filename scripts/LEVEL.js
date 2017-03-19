@@ -110,6 +110,7 @@ var LEVEL = [];
 				on: true,
 				update_game: function(data) {
 					var ready = data.scene.getObjectByName('ready')
+					console.log(ready)
 					
 					if (this.start === undefined) {
 						
