@@ -12,6 +12,7 @@ body {
 	height: 300px;
 	text-align: center;
 	color: white;
+	display: none;
 }
 
 #connect {
@@ -134,4 +135,11 @@ td, th {
 	background-color: rgba(0, 0, 0, 0.3);
 	color: white;
 	border: 1px solid white;
+}
+
+#screen_changer {
+	position: absolute;
+	z-index: 100;
+	background-color: black;
+	display: none;
 }

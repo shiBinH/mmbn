@@ -68,7 +68,7 @@ var X = {
 							var intersected = intersections[obj];
 							if (intersected.object.purpose !== 'surface') {
 								var current = intersections[obj].object;
-								if (hitPlayer(current, charge1) === -1) {
+								if (HIT(current, charge1, data) === -1) {
 									charge1.ondeath(data);
 									return;
 								}
@@ -78,7 +78,7 @@ var X = {
 							}
 						}
 
-						if (charge1.position.x<data.scene.bounds.left || charge1.position.x>data.scene.bounds.right) {
+						if ( Math.abs(charge1.position.x-player.position.x)>700 ||(charge1.position.x<data.scene.bounds.left || charge1.position.x>data.scene.bounds.right)) {
 							charge1.ondeath(data);
 							return;
 						}
@@ -120,10 +120,10 @@ var X = {
 				charge2.rotation.z = Math.PI/-2
 				if (charge2.velocity.x < 0) charge2.rotateZ(Math.PI)
 				charge2.position.copy(getPos(player));
-				charge2.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 32),
-													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 32)
+				charge2.raycasters = [new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 45),
+													 new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(charge2.velocity.x<0?-1:1, 0, 0), 0, 45)
 													];
-				charge2.raycasters[0].offsets = [16, 15, 0]; charge2.raycasters[1].offsets = [16, -15, 0];
+				charge2.raycasters[0].offsets = [30, 15, 0]; charge2.raycasters[1].offsets = [30, -15, 0];
 				charge2.active = true;
 				charge2.update_game = function(data) {
 					if (glow.scale.x>.01) {
@@ -148,7 +148,7 @@ var X = {
 						if (charge2.velocity.x < 0) charge2.rotation.z = Math.PI/2;
 						else charge2.rotation.z = -Math.PI/2;
 					}
-					else charge2.position.x += charge2.velocity.x * data.delta;
+					else charge2.position.x += charge2.velocity.x * Math.min(data.delta, 1/60);
 					for (var ray in charge2.raycasters) {
 						charge2.raycasters[ray].ray.direction.x = (charge2.velocity.x<0?-1:1);
 						charge2.raycasters[ray].ray.origin.copy(charge2.position)
@@ -158,7 +158,7 @@ var X = {
 							var intersected = intersections[obj];
 							if (intersected.object.purpose !== 'surface') {
 								var current = intersections[obj].object;
-								if (hitPlayer(current, charge2) === -1) {
+								if (HIT(current, charge2, data) === -1) {
 									charge2.ondeath(data);
 									return;
 								}
@@ -167,7 +167,7 @@ var X = {
 								return;
 							}
 						}
-						if (charge2.position.x<data.scene.bounds.left || charge2.position.x>data.scene.bounds.right) {
+						if ( Math.abs(charge2.position.x-player.position.x)>1000 || (charge2.position.x<data.scene.bounds.left || charge2.position.x>data.scene.bounds.right)) {
 							charge2.ondeath(data);
 							return;
 						}
@@ -274,7 +274,7 @@ var X = {
 			wJump_timer: 0,
 			sliding: false,
 			flinch: {
-				min: 20,
+				min: 10,
 				timer: 0,
 				vx: 0,
 				vy: 0
@@ -293,7 +293,8 @@ var X = {
 								return mesh;
 							 })(this),
 				prev: 0,
-				next: 200
+				next: 200,
+				invincible: 0
 			},
 			fire: {
 				timer: null,
@@ -302,17 +303,40 @@ var X = {
 			dmg_from: null
 		};
 		
+		this.ondmg = function(obj, data) {
+			var time = this.game.clock.getElapsedTime();
+			if (time - this.game.health.invincible < 1) return;
+			
+			//if (obj.DPS >= this.game.flinch.min) this.game.health.invincible = time
+			var dir;
+			/*
+			if (!this.game.left&&this.game.sliding) dir = -1;
+			else if (this.game.left&&this.game.sliding) dir = 1;
+			else if (obj.velocity.x<0) dir = -1;
+			else dir = 1;
+			*/
+			dir = (this.getWorldPosition().x>obj.getWorldPosition().x?1:-1)
+			this.action.flinch(time, dir, obj.DPS);
+			if (this.game.health.HP>0) this.game.dmg_from = obj.source;
+			this.game.health.HP -= obj.DPS;
+			this.game.health.mesh.material.color = new THREE.Color('red');
+			this.game.health.prev = this.game.clock.getElapsedTime();
+		}
+		
 		this.action = {
 			player: this,
-			flinch: function(time, dir) {
-				this.player.game.flinch.vy = 500;
-				this.player.game.flinch.vx = 300 * dir;
+			flinch: function(time, dir, dps, bypass) {
+				if (dps<this.player.game.flinch.min && !bypass) return;
+				this.player.game.health.invincible = time
+				this.player.game.flinch.vy = (500/30)*dps;
+				this.player.game.flinch.vx = (300/30)* dps * dir;
 				this.player.game.flinch.timer = time;
 				this.player.game.flinch.status = true;
 			}
 		};
 		
 		this.sfx = {
+			'hit': newSFX('audio/hit.wav', .2),
 			'death': newSFX('audio/death.wav', 0.15),
 			'jump': newSFX('audio/jump.wav', .5),
 			'land': newSFX('audio/land.wav', .4),
@@ -720,6 +744,7 @@ var X = {
 		this.DPS = 8;
 		THREE.Mesh.call(this, new THREE.SphereGeometry(4),new THREE.MeshBasicMaterial({color: new THREE.Color(0xffc266)}));
 		
+		this.originX = player.position.x;
 		this.velocity = getVel(player, 100);
 		this.position.copy(getPos(player, 1))
 		this.raycaster = new THREE.Raycaster(new THREE.Vector3(),
@@ -744,10 +769,16 @@ var X = {
 				return -1;
 			} else {
 				var current = intersections[obj].object;
-				if (hitPlayer(current, this)) {
+				if (HIT(current, this, data)) {
 					this.ondeath(data)
 					return -1;
 				}
+			}
+		}
+		if (data.scene.bounds.right-data.scene.bounds.left>=1000) {
+			if (Math.abs(this.position.x - this.originX) > 450) {
+				this.ondeath(data);
+				return -1;
 			}
 		}
 		if (this.position.x<data.scene.bounds.left || this.position.x>data.scene.bounds.right) {
@@ -778,26 +809,40 @@ var X = {
 		if ((player.game.left&&!player.game.sliding) || (!player.game.left&&player.game.sliding)) vx *= -1;
 		return new THREE.Vector3(vx, 0, 0);
 	}
-	function hitPlayer(current, obj) {
+	function HIT(current, obj, data) {
 		while (current !== null) {
 			if (current.purpose === 'player') {
 				var name = current.name;
-				var dir;
+				
 				if (obj.sfx && obj.sfx.hit) obj.sfx.hit.play();
 				else {
 					current.sfx['hit'].pause();
 					current.sfx['hit'].currentTime = 0;
 					current.sfx['hit'].play()
 				}
+				if (current.ondmg) {current.ondmg(obj); return -1;}
+				var dir;
+				
 				if (!current.game.left&&current.game.sliding) dir = -1;
 				else if (current.game.left&&current.game.sliding) dir = 1;
 				else if (obj.velocity.x<0) dir = -1;
 				else dir = 1;
-				if (obj.DPS >= current.game.flinch.min)current.action.flinch(current.game.clock.getElapsedTime(), dir);
+				if (obj.DPS >= current.game.flinch.min)current.action.flinch(current.game.clock.getElapsedTime(), dir, obj.DPS);
 				if (current.game.health.HP>0) current.game.dmg_from = obj.source;
 				current.game.health.HP -= obj.DPS;
 				current.game.health.mesh.material.color = new THREE.Color('red');
 				current.game.health.prev = current.game.clock.getElapsedTime();
+				
+				return -1;
+			} else if (current.purpose === 'enemy' && current.active) {
+				while (current!==null && !current.health) current = current.parent;
+				if (obj.sfx && obj.sfx.hit) obj.sfx.hit.play();
+				else if (current.sfx && current.sfx.hit) current.sfx.hit.play();
+				if (current.ondmg) {current.ondmg(obj, data); return -1;}
+				
+				current.health.HP -= obj.DPS;
+				current.health.mesh.material.color = new THREE.Color('red');
+				current.health.prev = data.time;
 				return -1;
 			}
 			current = current.parent;

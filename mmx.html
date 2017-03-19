@@ -7,6 +7,9 @@
 		<link rel="stylesheet" href="styles/mmx.css">
 	</head>
 	<body>
+		<div id="screen_changer">
+		
+		</div>
 		<div id="set_display">
 			
 		</div>
@@ -78,7 +81,7 @@
 			<div id="l_knee">L_knee <button>x</button><button>y</button><button>z</button></div>
 			<div id="l_ankle">L_ankle <button>x</button><button>y</button><button>z</button></div>
 		</div>
-		<audio id="audio-background" autoplay loop>
+		<audio id="audio-background" autoplay loop volume=0.5>
 			<source src="audio/x5zerostart.mp3" type="audio/mpeg">
 		</audio>
 		<script src="/socket.io/socket.io.js"></script>
@@ -109,6 +112,7 @@
 					gl_FragColor = vec4( glow, 1.0 );
 			}
 		</script>
+		<script src="scripts/LEVEL.js"></script>
 		<script src="scripts/x_animations.js"></script>
 		<script src="scripts/player.js"></script>
 		<script src="scripts/mmx2.js"></script>
