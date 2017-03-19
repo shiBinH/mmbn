@@ -127,6 +127,8 @@
 			.css('width', window.innerWidth)
 			.css('height', window.innerHeight);
 		
+		$("#audio-background").prop('volume', 0.3)
+		
 		renderer.render(scene, camera)
 	}
 	
@@ -145,7 +147,6 @@
 		clientKeys = {};
 		temp = 0;
 		
-		document.getElementById("audio-background").volume = 0.3
 		camera.position.z = 300;
 		var grid = new THREE.GridHelper(20000, 20000/100, new THREE.Color('yellow'))
 		grid.rotation.x = Math.PI/2
