@@ -98,6 +98,8 @@ var LEVEL = [];
 				msg.matrixAutoUpdate = false
 				msg.name = 'ready'
 				msg.visible = false
+				level.loadcheck++;
+				if (level.loadcheck === 3) level.loaded = true;
 			}
 		)
 		
@@ -443,7 +445,7 @@ var LEVEL = [];
 				level.meshes.push(turret4)
 
 				level.loadcheck++;
-				if (level.loadcheck === 2) level.loaded = true;
+				if (level.loadcheck === 3) level.loaded = true;
 			}
 		)
 
@@ -1183,7 +1185,7 @@ var LEVEL = [];
 		
 		
 		this.loadcheck++;
-		if (this.loadcheck === 2) this.loaded = true;
+		if (this.loadcheck === 3) this.loaded = true;
 		
 		function newBlock (x, length, y, height, width) {
 			var geometry = new THREE.BoxGeometry(length, height, width);
