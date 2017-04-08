@@ -217,6 +217,7 @@ var X = {
 	function Player(name, controls, plyrN) {
 		this.keysMap = {};
 		this.name = name;
+		this.lives = 5
 		this.socket = null;
 		this.name_Group = new THREE.Group();
 		this.purpose = 'player';
@@ -236,7 +237,14 @@ var X = {
 		this.bounds.rightFoot.y = 33;
 		this.bounds.leftFoot.y = 33;
 		this.game = {
+			other: {
+				v: new THREE.Vector3(),
+				onground: false,
+				down: new THREE.Vector3()
+			},
+
 			player: this,
+			lives: 5,
 			airborne: false,
 			onWall: false,
 			left: false,
@@ -769,6 +777,7 @@ var X = {
 				return -1;
 			} else {
 				var current = intersections[obj].object;
+				if (current.purpose === 'healthbar') continue;
 				if (HIT(current, this, data)) {
 					this.ondeath(data)
 					return -1;
@@ -849,16 +858,16 @@ var X = {
 		}
 	}
 	function newSFX(src, vol, loop) {
-			var audio = document.createElement('audio');
-			var source = document.createElement('source');
-			audio.preload = 'none';
-			source.src = src;
-			source.type = 'audio/wav';
-			audio.appendChild(source);
-			if (vol !== undefined) audio.volume = vol;
-			if (loop !== undefined) audio.loop = true;
-			return audio;
-		};
+		var audio = document.createElement('audio');
+		var source = document.createElement('source');
+		audio.preload = 'none';
+		source.src = src;
+		source.type = 'audio/wav';
+		audio.appendChild(source);
+		if (vol !== undefined) audio.volume = vol;
+		if (loop !== undefined) audio.loop = true;
+		return audio;
+	};
 	
 
 })()

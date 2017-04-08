@@ -24,6 +24,7 @@ var LEVEL = [];
 					var geometry = new THREE.CylinderGeometry(2, 2, 25);
 					var material = new THREE.MeshLambertMaterial({color: new THREE.Color('darkgreen')});
 					var mesh = new THREE.Mesh(geometry, material);
+					mesh.purpose = 'healthbar'
 					mesh.position.y = 25;
 					mesh.rotation.z = Math.PI/2
 					return mesh;
@@ -76,21 +77,28 @@ var LEVEL = [];
 	}
 	
 	LEVEL.push(function(){
-		this.respawn = false;
-		this.stage = false;
-		this.preboss = false;
-		this.atboss = false;
+		this.id = 1;
 		this.enemies = [];
 		this.meshes = [];
 		this.loaded = false;
 		this.loadcheck = 0
 		this.bounds = {left: -5000, right:10000, bottom: -200, top: 10000}
+		this.hearts = []
+		this.cleared = false
 		var level = this;
 		
 		var fontLoader = new THREE.FontLoader();
 		fontLoader.load(
 			'../fonts/helvetiker_bold.typeface.json',
 			function(response) {
+				var spriteTexture = new THREE.TextureLoader().load('../images/heart.png')
+				var spriteMat = new THREE.SpriteMaterial( { map: spriteTexture} );
+				var heart = new THREE.Sprite(spriteMat)
+				heart.scale.set(8, 8*(1440/1920), 1)
+				heart.name = 'lives'
+				level.hearts.push(heart)
+
+				
 				var textGeometry = new THREE.TextGeometry('READY', {font: response, size: 25, height: 3});
 				textGeometry.computeBoundingSphere();
 				var msg = new THREE.Mesh(textGeometry, new THREE.MeshPhysicalMaterial({color:new THREE.Color('aqua')}))
@@ -105,6 +113,7 @@ var LEVEL = [];
 		
 		
 		
+		
 		this.events = {
 			respawn: {
 				spawnPt: new THREE.Vector3(0, 90, 0),
@@ -112,27 +121,62 @@ var LEVEL = [];
 				on: true,
 				update_game: function(data) {
 					var ready = data.scene.getObjectByName('ready')
+					if (document.getElementById('screen_changer').style.display!=='none') $('#screen_changer').fadeOut(250)
 					
 					if (this.start === undefined) {
+						this.start = data.time
+						
+						data.scene.background = new THREE.TextureLoader().load('images/stage1.jpg');
+						
+						$('#audio-background').empty()
+						$('#audio-background').append('<source src="audio/zerostart.mp3" type="audio/mpeg" loop>')
+						document.getElementById('audio-background').volume = .3
+						document.getElementById('audio-background').currentTime = 0
+						document.getElementById('audio-background').load()
+						document.getElementById('audio-background').play()
 						
 						ready.visible = true
 						ready.scale.set(1, 1, 1)
 						ready.material.transparent = true
 						ready.material.opacity = 0
-						ready.position.set(-ready.geometry.boundingSphere.radius, 150, -data.camera.position.z/2)
 						
-						data.camera.position.set(0, 55, 200)
-						this.start = data.time
+						if (level.events.boss.on) {
+							level.events.boss.on = false
+							level.events.boss.engaged = false
+							level.events.boss.start = undefined
+							level.events.preboss.on = true
+							data.camera.position.set(4150, 850, 200)
+							data.player.position.set(4150, 850, 0)
+							level.boss.action.spawn.update_game(level.boss, data)
+							ready.scale.set(.5, .5, .5)
+							ready.position.set(-ready.geometry.boundingSphere.radius*.5+4150, 875, 50)
+							for (var enemy in level.enemies) if (level.enemies[enemy].ondeath) level.enemies[enemy].ondeath(data)
+						} else {
+							ready.position.set(-ready.geometry.boundingSphere.radius, 150, -data.camera.position.z/2)
+							data.camera.position.set(0, 55, 200)
+							data.player.position.copy(this.spawnPt)
+						}
+
 						data.scene.add(data.player)
-						data.scene.add(data.player.game.health.mesh); data.player.game.health.mesh.position.y += 150
-						data.player.position.copy(this.spawnPt)
+						data.scene.add(data.player.game.health.mesh); data.player.game.health.mesh.position.y += 150; data.player.game.health.mesh.visible = true
+						data.player.dead = null; data.player.game.health.HP = data.player.game.health.full;
+						while (level.hearts.length < data.player.game.lives) level.hearts.push(level.hearts[0].clone(true))
+						while (level.hearts.length > data.player.game.lives) data.scene.remove(level.hearts.pop())
+						for (var i=0 ; i<level.hearts.length ; i++) data.scene.add(level.hearts[i])
+						
 						data.player.controls.enabled = false
+						data.player.game.left = false; 
+						if (data.player.animation) data.player.animation.stop_right()
+						
+						for (var enemy in level.enemies) if (level.enemies[enemy].ondeath && level.enemies[enemy]!==level.boss) level.enemies[enemy].ondeath(data)
 					} else if (data.time - this.start > 4) {
-						data.player.controls.enabled = true
+						
 						data.player.game.health.mesh.visible = true
-						level.events.stage.on = true
+						//level.events.stage.on = true
 						ready.material.opacity -= (0.1);
 						if (ready.material.opacity < 0.1) {
+							data.player.controls.enabled = true
+							if (!level.events.preboss.on) level.events.stage.on = true
 							ready.visible = false
 							this.on = false
 							this.start = undefined
@@ -154,21 +198,31 @@ var LEVEL = [];
 				start: undefined,
 				on: false,
 				update_game: function(data) {
+
 					if (data.camera.position.z < 300 && data.player) {
 						data.camera.position.z += 2;
 						if (data.camera.position.y < 55) data.camera.position.y += .5;
 					}
 					else if (data.player) {
-						var dif = Math.abs(data.camera.position.x-data.player.position.x);
-						if (dif>20) {
-							data.camera.position.x = data.player.position.x + 20*(data.camera.position.x>data.player.position.x?1:-1);
-							data.camera.position.x = Math.min(data.camera.position.x, data.scene.bounds.right);
-							data.camera.position.x = Math.max(data.camera.position.x, data.scene.bounds.left+200);
+						if (data.player.dead===null) {
+			
+							var dif = Math.abs(data.camera.position.x-data.player.position.x);
+
+							if (dif>20) {
+								data.camera.position.x = data.player.position.x + 20*(data.camera.position.x>data.player.position.x?1:-1);
+								//data.camera.position.x += data.player.velocity.x * data.delta //* (data.camera.position.x > data.player.position.x?-1:1)
+								data.camera.position.x = Math.min(data.camera.position.x, data.scene.bounds.right);
+								data.camera.position.x = Math.max(data.camera.position.x, data.scene.bounds.left+200);
+							}
+							dif = Math.abs(data.camera.position.y-data.player.position.y);
+							if (dif>20) data.camera.position.y = data.player.position.y + 20*(data.camera.position.y>data.player.position.y?1:-1);
+							data.camera.position.y = Math.max(data.camera.position.y, data.scene.bounds.bottom+200)
+							data.camera.position.y = Math.min(data.camera.position.y, data.scene.bounds.top-200)
+							/*
+							data.camera.position.x = data.player.position.x
+							data.camera.position.y = data.player.position.y
+							*/
 						}
-						dif = Math.abs(data.camera.position.y-data.player.position.y);
-						if (dif>20) data.camera.position.y = data.player.position.y + 20*(data.camera.position.y>data.player.position.y?1:-1);
-						data.camera.position.y = Math.max(data.camera.position.y, data.scene.bounds.bottom+200)
-						data.camera.position.y = Math.min(data.camera.position.y, data.scene.bounds.top-200)
 					}
 					
 					if ((3990<=data.player.position.x && data.player.position.x<=4360) && (800<data.player.position.y&&data.player.position.y<900)) {
@@ -177,6 +231,8 @@ var LEVEL = [];
 						this.on = false
 						this.start = undefined
 						level.events.preboss.on = true
+						boss.action.spawn.update_game(boss, data)
+						for (var enemy in level.enemies) if (level.enemies[enemy].ondeath) level.enemies[enemy].ondeath(data)
 					}
 				}
 			},
@@ -185,7 +241,7 @@ var LEVEL = [];
 				update_game: function(data) {
 					data.camera.position.y = 850;
 					data.player.position.x = Math.max(3990, data.player.position.x)
-					if (data.camera.position.x<=4150) data.camera.position.x += 3
+					if (data.camera.position.x<4150) data.camera.position.x += 3
 					
 					if (data.player.position.x >=4350) {
 						data.scene.getObjectByName('door2').action.close.on = true
@@ -201,45 +257,66 @@ var LEVEL = [];
 				start: undefined,
 				on: false,
 				update_game: function(data) {
-					data.player.position.x = Math.max(4345, data.player.position.x)
+					data.player.position.x = Math.max(4350, data.player.position.x)
 					var boss = level.boss
 					if (this.start === undefined) this.start = data.time
 					else if (!this.engaged) {
+						var audio = document.getElementById('audio-background')
+						audio.volume = Math.max(0, audio.volume-0.005)
 						if (data.camera.position.y !== 875) data.camera.position.y += Math.round(1.5 * (data.camera.position.y>875?-1:1))
 						if (data.camera.position.x<4575) data.camera.position.x += 3
 						else {
-							if (boss.core.visible === false) {
-								boss.core.visible = true
-								boss.core.visible = true; boss.core.material.transparent = true; boss.core.material.opacity = 0
-								boss.health.mesh.scale.y = 0
-							} else if (boss.core.material.opacity < 1) {
-								boss.core.material.opacity += 0.04
-								boss.core.material.opacity = Math.max(1, boss.core.material.opacity)
-							} else if (boss.scale.x < 1) {
-								boss.scale.multiplyScalar(1.005)
-								if (boss.scale.x > 1) boss.scale.set(1, 1, 1)
-								boss.core.scale.set(1.5+Math.sin(data.time*6)/2, 1.5+Math.sin(data.time*6)/2, 1.5+Math.sin(data.time*6)/2)
-							} else if (boss.health.mesh.scale.y < 2) {
-								boss.health.mesh.visible = true
-								boss.health.mesh.scale.y += 0.05
-								this.start = data.time
-							} else if (data.time - this.start > 1) {
-								level.boss.traverse(function(obj){obj.active = true;})
+							boss.action.activate.update_game(boss, data)
+							if (boss.active) {
+								$('#audio-background').empty()
+								$('#audio-background').append('<source src="audio/boss.mp3" type="audio/mpeg" loop>')
+								document.getElementById('audio-background').volume = .3
+								document.getElementById('audio-background').currentTime = 0
+								document.getElementById('audio-background').load()
+								document.getElementById('audio-background').play()
 								this.engaged = true
 							}
 						}
 
-					}
-					
+					} 
 
 				}
 			}
 		}
+		
+		
 		this.update_game = function(data) {
+			
+			if (data.player.dead !== null && data.time - data.player.dead > 3) {
+				this.events.respawn.on = true
+			} else if (data.player.dead!==null && data.time-data.player.dead>2 && document.getElementById('screen_changer').style.display==='none') {
+				$('#screen_changer').fadeIn(500)
+			}
+			
+			if (this.events.respawn.on) this.events.respawn.update_game(data)
 			if (this.events.boss.on) this.events.boss.update_game(data) 
 			if (this.events.preboss.on) this.events.preboss.update_game(data) 
 			if (this.events.stage.on) this.events.stage.update_game(data) 
-			if (this.events.respawn.on) this.events.respawn.update_game(data)
+			
+			if (level.boss.defeated) document.getElementById('audio-background').pause()
+			if (level.boss.defeated && level.boss.action.death.complete!==undefined && data.time - level.boss.action.death.complete > 2) {
+				//	clear stage action
+				var n = 111
+				data.player.controls.enabled = false
+				var $screen_changer = $('#screen_changer')
+				if ($screen_changer.css('display')==='none') $screen_changer.fadeIn(500).queue(function(){
+					level.cleared = true
+					$(this).dequeue()
+				})
+			}
+			
+			var heart = data.scene.getObjectByName('lives')
+			var theta = data.camera.fov * Math.PI/180 / 2
+			var H = 2 * (data.camera.position.z-50) *  Math.tan(theta)
+			var W = H * data.camera.aspect
+			for (var i=0 ; i<level.hearts.length; i++) {
+				level.hearts[i].position.set(data.camera.position.x-W/2+10, data.camera.position.y+H/2-10 - i*10, 50)
+			}
 
 		}
 		
@@ -248,7 +325,6 @@ var LEVEL = [];
 		loader.load(
 			'collada/levels.dae',
 			function(collada) {
-
 				var turretMesh = collada.scene.children[0];
 				EnemyData.turret = {
 					mesh: function() {
@@ -266,40 +342,35 @@ var LEVEL = [];
 					health: {full: 110},
 					ondmg: function(src, data) {
 						this.health.HP -= src.DPS;
-						if (this.health.HP <= 0) {this.ondeath(data); return;}
+						if (this.health.HP <= 0) {
+							this.ondeath(data)
+							this.action.death.on = true
+							return;
+						}
 						
-						this.health.mesh.scale
 						this.health.prev = data.time;
 						this.health.mesh.material.color = new THREE.Color('red')
 					},
 					update_game: function(data) {
 						var core = this.getObjectByName('core')
 						
-						if (this.scale.x > 0.01) {
-							if (core.scale.x > 0.01) core.scale.subScalar(.05)
-							else {
-								this.scale.subScalar(0.05)
-								if (this.scale.x <= 0.01) this.position.x = data.scene.bounds.left - 300
-							}
+						if (this.action.death.on) {
+							this.action.death.update_game(this, data)
+							return;
 						}
-						else if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<400) {
-							this.health.mesh.visible = true
-							this.health.HP = this.health.full
-							this.health.mesh.material.color = new THREE.Color('darkgreen')
-							this.spawnable = false;
-							this.position.copy(this.spawnPt);
-							this.traverse(function(obj) {
-								obj.active = true;
-							})
+						if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<400) {
+							this.action.spawn.update_game(this, data)
 						} else if (!this.active && this.location.distanceTo(data.player.position)>=400) this.spawnable = true;
 						if (data.player.dead || data.player.position.distanceTo(this.position)>800) {
-							this.traverse(function(obj){obj.active = false;})
+							this.action.death.update_game(this, data)
+							this.ondeath(data)
+							//this.traverse(function(obj){obj.active = false;})
 						}
 						
 						if (!this.active) return;
 						
 						this.scale.set(1, 1, 1);
-						core.scale.set(1, 1, 1)
+						core.scale.set(2, 2, 2)
 						core.rotation.y += 0.1
 						this.health.mesh.scale.y = (this.health.HP/this.health.full<1/100?1/100:this.health.HP/this.health.full)
 						if (data.time - this.health.prev > .75) {
@@ -320,6 +391,9 @@ var LEVEL = [];
 									dif.multiplyScalar(200);
 									proj.velocity.copy(dif)
 									
+									this.sfx.fire.pause()
+									this.sfx.fire.currentTime = 0
+									this.sfx.fire.play()
 									proj.active = true;	
 									this.timers.fire = data.time;
 									break;
@@ -327,13 +401,51 @@ var LEVEL = [];
 							}
 						}
 					},
+					action: {
+						death: {
+							on: false,
+							update_game: function(turret, data) {
+								var core = turret.getObjectByName('core')
+								if (turret.scale.x > 0.01) {
+									if (core.scale.x > 0.01) core.scale.subScalar(.04)
+									else {
+										turret.scale.subScalar(0.05)
+										if (turret.scale.x <= 0.01) {
+											turret.position.x = data.scene.bounds.left - 300
+											this.on = false
+										}
+									}
+								}
+							}
+						},
+						spawn: {
+							on: false,
+							update_game: function(turret, data) {
+								turret.getObjectByName('core').scale.set(2, 2, 2)
+								turret.getObjectByName('core').material.color = new THREE.Color('red')
+								turret.health.mesh.visible = true
+								turret.health.HP = turret.health.full
+								turret.health.mesh.material.color = new THREE.Color('darkgreen')
+								turret.spawnable = false;
+								turret.position.copy(turret.spawnPt);
+								turret.traverse(function(obj) {
+									obj.active = true;
+								})
+							}
+						}
+					},
 					ondeath: function(data) {
+						this.getObjectByName('core').material.color = new THREE.Color('pink')
 						this.health.mesh.visible = false
-						//this.position.x = data.scene.bounds.left - 300;
 						this.traverse(function(obj) {
 							obj.active = false;
 						})
-						console.log('ondeath: dead')
+					},
+					sfx: undefined,
+					setup: function(turret) {
+						turret.sfx = {
+							fire: newSFX('audio/enemy/turret_fire.wav', 0.2)
+						}
 					},
 					others: function(source){
 						var objects = {}
@@ -440,8 +552,11 @@ var LEVEL = [];
 				level.meshes.push(turret2)
 				var turret3 = new Turret(new THREE.Vector3(1750, 0, 0))
 				level.meshes.push(turret3)
-				var turret4 = new Turret(new THREE.Vector3(3700, 750, 0))
+				/*
+				var turret4 = new Turret(new THREE.Vector3(-100, 150, 0))
 				level.meshes.push(turret4)
+				*/
+
 
 				level.loadcheck++;
 				if (level.loadcheck === 3) level.loaded = true;
@@ -494,6 +609,8 @@ var LEVEL = [];
 			mid.position.copy(pos); mid.originalpos = mid.position.clone();
 			top.position.copy(pos); top.position.y += 25; top.originalpos = top.position.clone();
 			bot.position.copy(pos); bot.position.y -= 25; bot.originalpos = bot.position.clone();
+			bot.velocity = new THREE.Vector3(0, -30, 0)
+			bot.down = new THREE.Vector3(0, -30, 0)
 			
 			mid.name = name
 			mid.top = top; mid.bot = bot;
@@ -506,13 +623,15 @@ var LEVEL = [];
 						if (mid.scale.y > .01) {
 							mid.scale.y -= 0.05
 						} else if (top.position.distanceTo(mid.position)<25+50+22+50) {
+							bot.velocity.y = -30
 							mid.visible = false
 							if (top.position.distanceTo(top.originalpos)<50) top.position.y += 0.5
-							if (mid.position.distanceTo(mid.originalpos)<22+50) mid.position.y -= 0.6
-							if (bot.position.distanceTo(bot.originalpos)<22+50) bot.position.y -= 0.6
+							if (mid.position.distanceTo(mid.originalpos)<22+50) mid.position.y += bot.velocity.y * data.delta
+							if (bot.position.distanceTo(bot.originalpos)<22+50) bot.position.y += bot.velocity.y * data.delta
 						} else {
 							mid.action.open.on = false
 							mid.opened = true
+							bot.velocity.y = 0
 						}
 					}
 				},
@@ -520,15 +639,17 @@ var LEVEL = [];
 					on: false,
 					update_game: function(data) {
 						if (top.position.distanceTo(mid.position)>25) {
+							bot.velocity.y = -30
 							if (top.position.distanceTo(top.originalpos)>0) top.position.y -= 0.5
-							if (mid.position.distanceTo(mid.originalpos)>0) mid.position.y += 0.6
-							if (bot.position.distanceTo(bot.originalpos)>0) bot.position.y += 0.6
+							if (mid.position.distanceTo(mid.originalpos)>0) mid.position.y -= bot.velocity.y * data.delta
+							if (bot.position.distanceTo(bot.originalpos)>0) bot.position.y -= bot.velocity.y * data.delta
 						} else if (mid.scale.y < 1) {
 							mid.visible = true
 							mid.scale.y += 0.05
 						} else{
 							mid.action.close.on = false
 							mid.opened = false
+							bot.velocity.y = 0
 						}
 					}
 				}
@@ -561,52 +682,86 @@ var LEVEL = [];
 			update_game: function(data){
 				var offset = this.radiusOffset || 0;
 				var core = this.getObjectByName('core');
-				if (this.scale.x>.01) {
-					if (core.scale.x>.01) core.scale.subScalar(0.03);
-					else if (this.scale.x>.01) {
-						this.scale.subScalar(0.05);
-						if (this.scale.x <= 0.01) this.position.x = data.scene.bounds.left - 300;
-					}
-				}
+				if (this.action.death.on) this.action.death.update_game(this, data)
 				else if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<400-offset) {
-					core.material.color = new THREE.Color('red')
-					this.health.HP = this.health.full;
-					this.health.mesh.visible = true;
-					this.spawnable = false;
-					this.position.copy(this.spawnPt);
-					this.traverse(function(obj){
-						obj.active = true;
-					})
+					this.action.spawn.update_game(this, data)
 				}
 				else if (!this.active && this.location.distanceTo(data.player.position)>400-offset) this.spawnable = true;
 				
-				if (data.player.dead || this.position.distanceTo(data.player.position)>800) this.active = false; 
+				if (data.player.dead || this.position.distanceTo(data.player.position)>800) {
+					this.action.death.update_game(this, data)
+					this.ondeath(data)
+				}
 				
 				if (!this.active) return;
+				this.sfx.fly.play()
 				core.rotation.z += .1;
 				var diff = data.player.position.clone();
 				core.scale.set(1, 1, 1);
 				this.scale.set(1, 1, 1)
 				diff.sub(this.position);
 				diff.normalize();
-				diff.multiplyScalar(75*data.delta)
+				diff.multiplyScalar(50*data.delta)
 				this.position.add(diff)
 
 				var health = this.health
 				health.mesh.scale.y = (health.HP/health.full<1/100?1/100:health.HP/health.full)
-				if (health.HP<=0) this.ondeath();
+				if (health.HP<=0) {
+					this.ondeath()
+					this.action.death.on = true
+				}
 				else if (data.time - health.prev > .3) {
 					if (health.mesh.scale.y > 0.5) health.mesh.material.color.set(new THREE.Color('darkgreen'));
 					else if (health.mesh.scale.y > 0.2) health.mesh.material.color.set(0xffff00);
 					else health.mesh.material.color.set(0xff6600);
 				}
 			},
+			sfx: undefined,
+			setup: function(flying) {
+				flying.sfx = {
+					fly: newSFX('audio/enemy/flying.wav', 0.1, true)
+				}
+			},
 			ondeath: function() {
+				this.sfx.fly.pause()
+				this.sfx.fly.currentTime = 0
 				this.traverse(function(obj) {
 					obj.active = false;
 				})
 				this.health.mesh.visible = false;
 				this.getObjectByName('core').material.color = new THREE.Color('pink')
+			},
+			action: {
+				death: {
+					on: false,
+					update_game: function(flying, data) {
+						var core = flying.getObjectByName('core');
+						if (flying.scale.x>.01) {
+							if (core.scale.x>.01) core.scale.subScalar(0.03);
+							else if (flying.scale.x>.01) {
+								flying.scale.subScalar(0.05);
+								if (flying.scale.x <= 0.01) {
+									this.on = false
+									flying.position.x = data.scene.bounds.left - 300;
+								}
+							}
+						}
+					}
+				},
+				spawn: {
+					on: false,
+					update_game: function(flying, data) {
+						var core = flying.getObjectByName('core');
+						core.material.color = new THREE.Color('red')
+						flying.health.HP = flying.health.full;
+						flying.health.mesh.visible = true;
+						flying.spawnable = false;
+						flying.position.copy(flying.spawnPt);
+						flying.traverse(function(obj){
+							obj.active = true;
+						})
+					}
+				}
 			}
 		}
 		
@@ -645,12 +800,9 @@ var LEVEL = [];
 				return body;
 			},
 			active: true,
-			velocity: new THREE.Vector3(),
+			velocity: new THREE.Vector3(-100, 0, 0),
 			DPS: 40,
 			health: {full: 1},
-			setup: function() {
-				this.velocity.x = -100;
-			},
 			ondmg: function(src, data) {
 				
 			},
@@ -694,6 +846,16 @@ var LEVEL = [];
 				this.position.x += (this.velocity.x * data.delta)
 				
 			},
+			sfx: undefined,
+			setup: function(worm){
+				worm.sfx = {
+					compress: newSFX('audio/enemy/worm_charge.wav', 0.1),
+					attack: {
+						played: false,
+						sfx: newSFX('audio/enemy/worm_attack.wav', 0.2)
+					}
+				}
+			},
 			prev: {
 				airborne: true,
 				pos: new THREE.Vector3()
@@ -712,12 +874,24 @@ var LEVEL = [];
 							this.start = data.time;
 						}
 						if (data.time - this.start < 2) {
+							obj.sfx.compress.play()
 							obj.scale.x *= 0.99;
 							obj.velocity.x = 0;
 						} else if (data.time - this.start < 6) {
+							obj.sfx.compress.pause()
+							if (!obj.sfx.attack.played) {
+								obj.sfx.attack.played = true
+								obj.sfx.attack.sfx.play()
+							}
 							obj.scale.x = 1.5
 							obj.velocity.x = 500 * obj.raycs.detect.ray.direction.x
 						} else {
+							obj.sfx.compress.pause()
+							obj.sfx.compress.currentTime = 0
+							obj.sfx.attack.played = false
+							obj.sfx.attack.sfx.pause()
+							obj.sfx.attack.sfx.currentTime = 0
+							
 							obj.scale.set(1, 1, 1)
 							obj.velocity.x = 100 * (obj.velocity.x<0?-1:1)
 							this.start = undefined;
@@ -734,6 +908,8 @@ var LEVEL = [];
 		this.meshes.push(worm2)
 		var worm3 = new Worm(new THREE.Vector3(3300, 1000, 0))
 		this.meshes.push(worm3)
+		//var worm4 = new Worm(new THREE.Vector3(-300, 200, 0))
+		//this.meshes.push(worm4)
 		
 		function Worm(pos) {
 			var worm = new Enemy(EnemyData.worm);
@@ -784,7 +960,25 @@ var LEVEL = [];
 					mesh.matrixAutoUpdate = false
 					mesh.raycs = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 18)
 					mesh.dr = new THREE.Vector3()
+					mesh.sfx = {
+						reattach: newSFX('audio/enemy/boss1_reattach.wav', 0.1)
+					}
 					mesh.action = {
+						death:{
+							on: false,
+							start: undefined,
+							update_game: function(shot, data) {
+								if (this.start === undefined) {
+									this.start = data.time
+									shot.material.color = new THREE.Color('grey')
+								} else if (shot.scale.x > 0.01) {shot.scale.subScalar(0.05); shot.updateMatrix()}
+								else {
+									this.on = false
+									return -1
+								}
+								return 0;
+							}
+						},
 						spin: {
 							update_game: function(shot, data) {
 								shot.rotation.z += 0.1
@@ -797,6 +991,9 @@ var LEVEL = [];
 							a: new THREE.Vector3(),
 							update_game: function(shot, data) {
 								if (!this.attached && shot.src.position.distanceTo(shot.position) <= 35) {
+									shot.sfx.reattach.pause()
+									shot.sfx.reattach.currentTime = 0
+									shot.sfx.reattach.play()
 									this.attached = true
 									var n = shot.name.charAt(shot.name.length-1)
 									var anchor = shot.src.getObjectByName('anchor' + (1+Math.floor(n/2)))
@@ -837,8 +1034,7 @@ var LEVEL = [];
 									var dr = shot.velocity.clone()
 									dr.multiplyScalar(data.delta)
 									shot.position.add(dr)
-									shot.position.x = Math.min(4800, shot.position.x); shot.position.x = Math.max(4350, shot.position.x)
-									shot.position.y = Math.min(1000, shot.position.y); shot.position.y = Math.max(750, shot.position.y)
+									
 								} else if (shot.scale.x > 1) {
 									shot.scale.subScalar(0.05)
 									if (shot.scale.x <= 1) this.check++;
@@ -873,7 +1069,8 @@ var LEVEL = [];
 					}
 					mesh.update_game = function(data) {
 						if (mesh.action.fire.on) mesh.action.fire.update_game(mesh, data);
-						
+						mesh.position.x = Math.min(4800, mesh.position.x); mesh.position.x = Math.max(4350, mesh.position.x)
+						mesh.position.y = Math.min(1000, mesh.position.y); mesh.position.y = Math.max(750, mesh.position.y)
 						mesh.updateMatrix()
 					}
 					
@@ -882,13 +1079,18 @@ var LEVEL = [];
 				
 				return mesh;
 			},
+			defeated: undefined,
 			health: {full: 750},
 			active: false,
 			DPS: 35,
 			velocity: new THREE.Vector3(),
 			ondmg: function(src, data) {
 				this.health.HP -= src.DPS;
-				if (this.health.HP <= 0) {this.ondeath(data); return;}
+				if (this.health.HP <= 0) {
+					this.defeated = true
+					this.ondeath(data)
+					return;
+				}
 
 				this.health.mesh.scale
 				this.health.prev = data.time;
@@ -898,12 +1100,20 @@ var LEVEL = [];
 				boss.traverse(function(obj){
 					if (obj.name.substring(0, 4) === 'shot') obj.src = boss;
 				})
+				
+				boss.sfx = {
+					fire: newSFX('audio/enemy/boss1_fire.wav', 0.1),
+					hone: newSFX('audio/enemy/boss1_hone.wav', 0.1),
+					retract: newSFX('audio/enemy/boss1_retract.wav', 0.1)
+				}
 			},
+			sfx: undefined,
 			update_game: function(data) {
 				boss.health.mesh.position.copy(this.position);
 				boss.health.mesh.position.y += 33
 				var core = this.core	
 				core.position.copy(this.position)
+				if (this.action.death.on && this.defeated && this.action.death.complete===undefined) this.action.death.update_game(this, data)
 				if (!this.active) return;
 				
 				core.scale.set(1.5+Math.sin(data.time*6)/2, 1.5+Math.sin(data.time*6)/2, 1.5+Math.sin(data.time*6)/2)
@@ -942,7 +1152,116 @@ var LEVEL = [];
 				boss.position.y = Math.max(boss.position.y, 750); boss.position.y = Math.min(1000, boss.position.y)
 				this.prev.time = data.time;
 			},
+			ondeath: function(data) {
+				this.traverse(function(obj){obj.active = false})
+				this.health.mesh.visible = false
+				this.action.death.on = true
+			},
 			action: {
+				death: {
+					complete: undefined,
+					check: 0,
+					shots: undefined,
+					start: undefined,
+					on: false,
+					n: 100,
+					vy: 0,
+					update_game: function(boss, data) {
+						
+						if (this.start === undefined) {
+							this.shots = []
+							this.check = 0
+							this.start = data.time
+							boss.core.material.color = new THREE.Color('pink')
+							for (var i=0 ; i<6 ; i++) {
+								var shot = data.scene.getObjectByName('shot' + i)
+								this.shots.push(shot)
+								shot.action.death.on = true
+							}
+						} else if (this.check<6) {
+							for (var i=0 ; i<6 ; i++) {
+								if (this.shots[i].action.death.on && this.shots[i].action.death.update_game(this.shots[i], data)) {
+									this.check++
+								}
+							}
+						}	else if (this.n>0) {
+							boss.core.scale.set(1.5+(this.n/100)*Math.sin(data.time*6)/2, 1.5+(this.n/100)*Math.sin(data.time*6)/2, 1.5+(this.n/100)*Math.sin(data.time*6)/2)
+							this.n -= 0.5;
+						} else if (boss.position.y-30>750) {
+							this.vy -= 1100 * data.delta
+							boss.position.y += this.vy * data.delta
+						} else {
+							boss.position.y = 750 + 30
+							boss.getObjectByName('main').material.color = new THREE.Color('grey')
+							this.complete = data.time
+						}
+						
+					}
+				},
+				spawn: {
+					update_game: function(boss, data) {
+						boss.defeated = false
+						boss.position.set(4700, 940, 0)
+						boss.scale.set(0.5, 0.5, 0.5)
+						boss.core.visible = false; boss.core.scale.set(1.5, 1.5, 1.5)
+						boss.health.HP = boss.health.full
+						boss.health.mesh.scale.y = 2; boss.health.mesh.visible = false
+						boss.action.levitate.on = boss.action.lockon.on = false
+					
+						boss.action.retract.on = false
+						boss.action.retract.prev = {scale: undefined}; boss.action.retract.expand = boss.action.retract.contract = boss.action.retract.finish = false; boss.action.retract.shots = boss.action.retract.start = undefined
+						
+						boss.action.tackle.on = false
+						boss.action.tackle.move = false; boss.action.n = 0; boss.action.start = undefined, boss.action.prev = {atk: 0, dist: undefined}
+						
+						boss.action.fire.locked = false; boss.action.fire.n = 0; boss.action.fire.start = undefined; boss.action.fire.current = undefined; boss.action.fire.on = true
+						for (var i=0 ; i<6 ; i++) {
+							var shot = data.scene.getObjectByName('shot' + i)
+							shot.action.retract.attached = false; shot.action.retract.check = 0
+							var anchor = data.scene.getObjectByName('anchor' + (1+Math.floor(i/2)))
+							anchor.rotation.x = anchor.rotation.y = anchor.rotation.z = 0
+							anchor.add(shot)
+							shot.scale.set(1, 1, 1); shot.position.set(0, 0, 0); shot.material.color = new THREE.Color('orange')
+							var n = shot.name.charAt(shot.name.length-1)
+							
+							switch(parseInt(n)) {
+								case 0: shot.position.x = -35; break;
+								case 1: shot.position.x = 35; break;
+								case 2: shot.position.y = -35; break;
+								case 3: shot.position.y = 35; break;
+								case 4: shot.position.z = -35; break;
+								case 5: shot.position.z = 35; break;
+							}
+							shot.updateMatrix()
+						}
+						
+						boss.action.death.complete = undefined
+
+					}
+				},
+				activate: {
+					on: false,
+					update_game: function(boss, data) {
+						if (boss.core.visible === false) {
+							boss.core.visible = true
+							boss.core.visible = true; boss.core.material.transparent = true; boss.core.material.opacity = 0
+							boss.health.mesh.scale.y = 0
+						} else if (boss.core.material.opacity < 1) {
+							boss.core.material.opacity += 0.04
+							boss.core.material.opacity = Math.max(1, boss.core.material.opacity)
+						} else if (boss.scale.x < 1) {
+							boss.scale.multiplyScalar(1.005)
+							if (boss.scale.x > 1) boss.scale.set(1, 1, 1)
+							boss.core.scale.set(1.5+Math.sin(data.time*6)/2, 1.5+Math.sin(data.time*6)/2, 1.5+Math.sin(data.time*6)/2)
+						} else if (boss.health.mesh.scale.y < 2) {
+							boss.health.mesh.visible = true
+							boss.health.mesh.scale.y += 0.05
+							this.start = data.time
+						} else if (data.time - this.start > 1) {
+							level.boss.traverse(function(obj){obj.active = true;})
+						}
+					}
+				},
 				levitate: {
 					n: 0,
 					update_game: function(boss, data) {
@@ -1037,6 +1356,9 @@ var LEVEL = [];
 							dir.multiplyScalar(400 * data.delta)
 							this.current.action.fire.dr.copy(dir)
 							this.current.action.fire.on = true
+							boss.sfx.fire.pause()
+							boss.sfx.fire.currentTime = 0
+							boss.sfx.fire.play()
 							
 							this.n++;
 							this.locked = false;
@@ -1076,6 +1398,10 @@ var LEVEL = [];
 							dif.multiplyScalar(300 + ((this.n+1)*(this.n+1)*10))
 							this.velocity.copy(dif)
 							this.prev.dist = boss.position.distanceTo(this.to);
+							
+							boss.sfx.hone.pause()
+							boss.sfx.hone.currentTime = 0
+							boss.sfx.hone.play()
 						} else if (boss.position.distanceTo(this.to)>0 && boss.position.distanceTo(this.to)<=this.prev.dist) {
 							//data.scene.getObjectByName('bosscore').rotation.z += .1
 							this.prev.dist = boss.position.distanceTo(this.to)
@@ -1125,6 +1451,9 @@ var LEVEL = [];
 								this.shots.push(shot)
 							}
 							this.expand = true
+							boss.sfx.retract.pause()
+							boss.sfx.retract.currentTime = 0
+							boss.sfx.retract.play()
 						} else if (this.expand) {
 							for (var i=0 ; i<6 ; i++) this.shots[i].action.spin.update_game(this.shots[i], data)
 							var r = this.prev.scale
@@ -1158,25 +1487,21 @@ var LEVEL = [];
 							this.finish = false
 							this.on = false
 							boss.action.fire.on = true
-						}
+						} 
 					}
 				}
 			},
 			prev: {
 				time: 0
-			},
-			ondeath: function(data) {
-				this.health.mesh.visible = false;
-			},
+			}
 		}
 		
 		var boss = new Enemy(EnemyData.boss1);
 		boss.traverse(function(obj){level.enemies.push(obj)})
-		boss.position.set(4700, 940, 0)
-		boss.scale.multiplyScalar(0.5)
 		boss.core = boss.getObjectByName('core')
-		boss.core.name = 'bosscore'; boss.core.scale.set(1.5, 1.5, 1.5); boss.core.rotation.z = Math.PI; boss.core.visible = false
-		boss.add(boss.health.mesh); boss.health.mesh.scale.y = 2; boss.health.mesh.visible = false
+		boss.core.name = 'bosscore'; boss.core.rotation.z = Math.PI; 
+		boss.add(boss.health.mesh); 
+		boss.position.set(this.bounds.left - 300)
 		this.boss = boss;
 		this.meshes.push(boss)
 		this.meshes.push(boss.core)
@@ -1186,28 +1511,990 @@ var LEVEL = [];
 		this.loadcheck++;
 		if (this.loadcheck === 3) this.loaded = true;
 		
-		function newBlock (x, length, y, height, width) {
-			var geometry = new THREE.BoxGeometry(length, height, width);
-			var material = new THREE.MeshStandardMaterial({color: new THREE.Color('grey')});
-			var mesh = new THREE.Mesh(geometry, material);
-			mesh.position.set(x+length/2, y-height/2, 0);
-			mesh.purpose = 'surface';
-			mesh.matrixAutoUpdate = false; mesh.updateMatrix();
-			return mesh;
-		}
 		
-		function newCore(size) {
-			var geometry = new THREE.Geometry();
-			geometry.vertices.push(new THREE.Vector3(0, size*Math.sqrt(3)/4, 0),
-														 new THREE.Vector3(-size/2, -size*Math.sqrt(3)/4, 0),
-														 new THREE.Vector3(size/2, -size*Math.sqrt(3)/4, 0)
-														)
-			geometry.faces.push( new THREE.Face3(0, 1, 2));
-			var material = new THREE.MeshBasicMaterial({color: new THREE.Color('red')});
-			var mesh = new THREE.Mesh(geometry, material);
-			mesh.name = 'core';
-			return mesh;
+		
+	})
+	//	LEVEL 2
+	LEVEL.push(function(){
+		this.id = 1
+		this.enemies = []
+		this.meshes = []
+		this.loaded = false
+		this.loadcheck = 0
+		this.loadcheck_max = 4
+		this.meshloaded = false
+		this.bounds = {left: -5000, right:10000, bottom: -10000, top: 10000}
+		this.hearts = []
+		this.cleared = false
+		this.flags = {
+			wall1: true
+		}
+		var level = this
+		
+		
+		this.update_game = function(data) {
+			if (data.player.dead !== null && data.time - data.player.dead > 3) {
+				this.events.respawn.on = true
+			} else if (data.player.dead!==null && data.time-data.player.dead>2 && document.getElementById('screen_changer').style.display==='none') {
+				$('#screen_changer').fadeIn(500)
+			}
+			
+			if (this.events.setup.on) this.events.setup.update_game(data)
+			else if(this.loadcheck >= this.loadcheck_max) {
+				
+				if (this.events.respawn.on) this.events.respawn.update_game(data)
+				if (this.events.stage.on) this.events.stage.update_game(data)
+				if (this.loaded) {
+					var heart = data.scene.getObjectByName('lives')
+					var theta = data.camera.fov * Math.PI/180 / 2
+					var H = 2 * (data.camera.position.z-200) *  Math.tan(theta)
+					var W = H * data.camera.aspect
+					for (var i=0 ; i<level.hearts.length; i++) {
+						//level.hearts[i].position.set(0, 15*(1+i), 0)
+						level.hearts[i].position.set(data.camera.position.x-W/2+3, data.camera.position.y+H/2-3 - i*4, 200)
+					}
+				}
+			}
+			
+
+		}
+		this.events = {
+			setup: {
+				on: true,
+				start: undefined,
+				progress: 0,
+				update_game: function(data) {
+					
+					if (this.progress === 0) updateA(data)
+					else updateB(data)
+					
+					function updateA(data) {
+						level.events.setup.progress = 1
+						var fontLoader = new THREE.FontLoader()
+						fontLoader.load(
+							'../fonts/helvetiker_bold.typeface.json',
+							function(response) {
+								var spriteTexture = new THREE.TextureLoader().load('../images/heart.png')
+								var spriteMat = new THREE.SpriteMaterial( { map: spriteTexture, useScreenCoordinates: true} );
+								var heart = new THREE.Sprite(spriteMat)
+								heart.scale.set(3, 3*(1440/1920), 1)
+								heart.name = 'lives'
+								level.hearts.push(heart)
+
+								var textGeometry = new THREE.TextGeometry('READY', {font: response, size: 25, height: 3});
+								textGeometry.computeBoundingSphere();
+								var msg = new THREE.Mesh(textGeometry, new THREE.MeshPhysicalMaterial({color:new THREE.Color('aqua')}))
+								level.meshes.push(msg)
+								msg.matrixAutoUpdate = false
+								msg.name = 'ready'
+								msg.visible = false
+
+								level.loadcheck++;
+							}
+						)
+
+						var loader = new THREE.ColladaLoader();
+						loader.load(
+							'collada/stage2.dae',
+							function(collada) {
+								//console.log(collada)
+								var mesh;
+								for (var i=0 ; i<collada.scene.children.length ; i++) {				
+									mesh = collada.scene.children[i].children[0]
+									if (mesh.parent.name) mesh.name = mesh.parent.name
+
+									if (mesh.name === 'entrance') mesh.material.side = THREE.DoubleSide
+									else if (mesh.name.substring(0, 5) === 'spike') {
+										mesh.purpose = 'enemy'
+										mesh.DPS = 500
+										mesh.active = true
+										level.enemies.push(mesh)
+									} else if (mesh.name === 'moving0' || mesh.name === 'moving1') {
+										let moving = mesh;
+										moving.x0 = moving.position.x
+										moving.velocity = new THREE.Vector3(75, 0, 0)
+										if (mesh.name === 'moving1') moving.velocity.x *= -1
+										moving.update_game = function(data) {
+											if (Math.abs(data.player.position.x - 700) > 800) return;
+											if (Math.abs(moving.position.x-moving.x0)>75) {
+												moving.velocity.x *= -1
+												moving.position.x = moving.x0 + (moving.position.x>moving.x0?75:-75)
+											}
+											moving.position.x += moving.velocity.x * data.delta
+											moving.updateMatrix()
+										}
+									}
+
+									if (!mesh.purpose) mesh.purpose = 'surface'
+									mesh.geometry.computeBoundingSphere()
+									mesh.down = new THREE.Vector3(0, -10, 0)
+									level.meshes.push(mesh)
+									mesh.matrixAutoUpdate = false
+								}
+
+								level.loadcheck++;
+							}
+						)
+						loader.load(
+							'collada/stage2_enemies.dae',
+							function(collada) {
+								var soldierA_proto = new THREE.Group()
+								var grenade_launcher_proto = new THREE.Group()
+								var bird_proto = new THREE.Group()
+								for (var i=0 ; i<collada.scene.children.length ; i++) {
+									var mesh = collada.scene.children[i].children[0];
+									mesh.name = mesh.parent.name
+									if (mesh.parent.name.substring(0, 8) === 'soldierA') soldierA_proto.add(mesh) 
+									else if (mesh.parent.name.substring(0, 16) === 'grenade_launcher') grenade_launcher_proto.add(mesh)
+									else if (mesh.parent.name.substring(0, 4) === 'bird') bird_proto.add(mesh)
+								}
+								EnemyData.bird  = {
+									mesh: function() {
+										var bird = bird_proto.clone(true)
+										return bird;
+									},
+									DPS: 40,
+									health: {full: 70},
+									velocity: new THREE.Vector3(),
+									v0: new THREE.Vector3(0, -400, 0),
+									raycs: {
+										up: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, 1, 0), 0, 15),
+										down: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 15),
+										left: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 15),
+										right: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), 0, 15),
+										detect: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 300)
+									},
+									ondmg: function(src, data) {
+										this.health.HP -= src.DPS;
+										this.health.mesh.scale.y = this.health.HP/this.health.full<1/100?1/100:this.health.HP/this.health.full
+										if (this.health.HP <= 0) {
+											this.ondeath(data)
+											this.action.death.on = true
+											return;
+										}
+
+										this.health.prev = data.time;
+										this.health.mesh.material.color = new THREE.Color('red')
+									},
+									update_game: function(data) {
+										if (this.action.death.on) {
+											this.action.death.update_game(this, data)
+											return;
+										}
+										if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<400) {
+											this.action.respawn.update_game(this, data)
+										} else if (!this.active && this.location.distanceTo(data.player.position)>=400) this.spawnable = true;
+										if (data.player.dead || data.player.position.distanceTo(this.position)>800) {
+											this.action.death.update_game(this, data)
+											this.ondeath(data)
+										}
+										if (!this.active) return;
+										
+										if (!this.action.attack.on && !this.action.land.on) {
+											this.raycs.detect.ray.origin.copy(this.position);
+											var dir = data.player.position.clone()
+											dir.sub(this.raycs.detect.ray.origin); dir.normalize()
+											this.raycs.detect.ray.direction.copy(dir)
+											
+											var surfaceIntersection = this.raycs.detect.intersectObjects(data.scene.children)
+											var playerIntersection = this.raycs.detect.intersectObject(data.player, true)
+											let detected = false
+											if (surfaceIntersection.length && playerIntersection.length) {
+												let dist1;
+												for (var c=0 ; c<surfaceIntersection.length ; c++) {
+													if (surfaceIntersection[c].object.purpose === 'surface')
+														dist1 = surfaceIntersection[c].distance
+												}
+												
+												let dist2 = playerIntersection[0].distance
+												if (dist2 <= dist1) detected = true
+											} else if (playerIntersection.length) detected = true
+											if (detected) this.action.attack.on = true
+										}
+										if (this.action.attack.on) this.action.attack.update_game(this, data)
+										
+										if (this.action.land.on) this.action.land.update_game(this, data)
+										
+										if (data.time - this.health.prev > .75) {
+											if (this.health.mesh.scale.y > 0.5) this.health.mesh.material.color.set(new THREE.Color('darkgreen'));
+											else if (this.health.mesh.scale.y > 0.2) this.health.mesh.material.color.set(0xffff00);
+											else this.health.mesh.material.color.set(0xff6600);
+										}
+										
+										
+										this.traverse(function(obj){obj.updateMatrix()})
+									},
+									action: {
+										respawn: {
+											on: false,
+											update_game: function(bird, data) {
+												bird.spawnable = false
+												bird.health.HP = bird.health.full
+												bird.health.mesh.scale.set(1, 1, 1); bird.health.mesh.visible = true; bird.health.mesh.material.color = new THREE.Color('darkgreen')
+												bird.scale.set(1, 1, 1)
+												bird.visible = true
+												bird.position.copy(bird.spawnPt)
+												bird.traverse(function(obj){
+													obj.active = true
+												})
+												this.on = false
+												
+												bird.action.xrotated = 0; bird.action.xrotate = 200; bird.action.yrotate = 0
+												
+												bird.action.attack.check = 0
+												bird.action.attack.angle = undefined
+												
+												bird.action.land.check1 = bird.action.land.on = false
+												bird.action.land.start = bird.action.land.orientation = undefined
+												
+												bird.velocity.copy(bird.v0)
+												bird.action.attack.on = false; bird.action.land.on = false
+												bird.parts.head.rotation.x = 0
+												bird.parts.body.rotation.set(0, 0, 0)
+												bird.parts.left.rotation.z = 10 * Math.PI/180; bird.parts.right.rotation.z = -10 * Math.PI/180
+											}
+										},
+										death: {
+											on: false,
+											update_game: function(bird, data) {
+												bird.visible = false
+												bird.position.set(data.scene.bounds.left - 300, 0, 0)
+												
+												this.on = false
+											}
+										},
+										attack: {
+											xrotated: 0,
+											xrotate: 200,
+											yrotate: 0,
+											check: 0,
+											angle: undefined,
+											on: false,
+											update_game: function(bird, data) {
+												
+												if (bird.parts.head.rotation.x > 0) {
+													bird.parts.head.rotation.x -= Math.PI/6 * data.delta
+													bird.parts.right.rotateZ(-this.xrotate*Math.PI/180 * data.delta)
+													bird.parts.left.rotateZ(this.xrotate*Math.PI/180 * data.delta)
+													this.xrotate += Math.sign(this.xrotate) * 2
+													this.xrotated += this.xrotate*Math.PI/180*data.delta
+													if (this.xrotated*180/Math.PI>10 || this.xrotated*180/Math.PI<0) {
+														this.xrotated = this.xrotated>0? 10*Math.PI/180 : 0
+														this.xrotate *= -1	
+													}
+													if (bird.parts.head.rotation.x <= 0) {
+														bird.parts.head.rotation.x = 0
+														bird.velocity.copy(data.player.position)
+														bird.velocity.sub(bird.position); bird.velocity.normalize()
+														bird.velocity.multiplyScalar(400)
+														
+														var dir = bird.parts.head.getWorldPosition().clone()
+														dir.sub(bird.parts.body.getWorldPosition())
+														dir.normalize()
+														var vel = bird.velocity.clone(); vel.normalize()
+														var angle = dir.angleTo(vel)
+														this.angle = angle
+														bird.parts.body.rotation.z += angle
+														bird.traverse(function(obj){obj.updateMatrix()})
+														this.xrotated = 0; this.xrotate = 200
+														this.check++
+														
+													}
+													else return;
+												} else if (this.check === 1) {
+													var dir = bird.parts.head.getWorldPosition().clone()
+													dir.sub(bird.parts.body.getWorldPosition())
+													dir.normalize()
+													var vel = bird.velocity.clone(); vel.normalize()
+													var angle = dir.angleTo(vel)
+													if (angle>this.angle) bird.parts.body.rotation.z -= 2 * this.angle
+													bird.parts.head.rotation.x = -Math.PI/ 2 * .8
+													bird.parts.left.rotation.x = bird.parts.right.rotation.x = Math.PI/6
+													bird.parts.left.rotation.z = 10 * Math.PI/180
+													bird.parts.right.rotation.z = -10 * Math.PI/180
+													this.check = 0
+													this.angle = undefined
+													
+													
+													if (bird.position.x < data.player.position.x) {
+														this.yrotate = Math.PI/2
+														bird.parts.body.rotateY(Math.PI/2)
+													} else {
+														this.yrotate = -Math.PI/2
+														bird.parts.body.rotateY(-Math.PI/2)
+													}
+													
+													return;
+												}
+												
+												var intersections;
+												bird.position.x += bird.velocity.x * data.delta
+												bird.position.y += bird.velocity.y * data.delta		
+												
+												for (var rayc in bird.raycs) bird.raycs[rayc].ray.origin.copy(bird.position)
+												for (var rayc in bird.raycs) {
+													if (rayc === 'detect') continue;
+													intersections = bird.raycs[rayc].intersectObjects(data.scene.children)
+													if (intersections.length && intersections[0].object.purpose === 'surface') {
+														bird.velocity.set(0, 0, 0)
+														bird.position.copy(intersections[0].point)
+
+														switch(rayc) {
+															case 'up':
+																bird.position.y -= bird.raycs[rayc].far; break;
+															case 'down':
+																bird.position.y += bird.raycs[rayc].far; break;
+															case 'left':
+																bird.position.x += bird.raycs[rayc].far; break;
+															case 'right':
+																bird.position.x -= bird.raycs[rayc].far; break;
+														}
+														
+														this.on = false
+														bird.action.land.orientation = rayc
+														bird.action.land.on = true
+														break;
+													}
+												}
+											}
+										},
+										land: {
+											check1: false,
+											on: false,
+											start: undefined,
+											orientation: undefined,
+											update_game: function(bird, data) {
+												if (!this.check1) {
+													this.check1 = true
+													if (bird.parts.body.rotation.y !== 0) bird.parts.body.rotateY(-bird.action.attack.yrotate)
+													bird.parts.head.rotation.x = 0
+													bird.parts.left.rotation.x = bird.parts.right.rotation.x = 0
+												}
+												if (bird.parts.head.rotation.x < Math.PI/ 6) {
+													
+													if (this.orientation === 'down') bird.parts.body.rotation.z = 0
+													else if (this.orientation === 'up') bird.parts.body.rotation.z = Math.PI
+													else if (this.orientation === 'left') bird.parts.body.rotation.z = Math.PI/-2
+													else if (this.orientation === 'right') bird.parts.body.rotation.z = Math.PI/2
+													bird.parts.head.rotation.x += Math.PI/3 * data.delta
+													if (bird.parts.head.rotation.x >= Math.PI/6) {
+														this.start = data.time
+														bird.parts.head.rotation.x = Math.PI/6
+													}
+												} else if (data.time - this.start > 1) {
+													this.orientation = undefined
+													this.start = false
+													this.check1 = false
+													this.on = false
+												}
+											}
+										}
+									},
+									ondeath: function(data) {
+										this.health.mesh.visible = false
+										this.traverse(function(obj) {
+											obj.active = false;
+										})
+									},
+									sfx: undefined,
+									setup: function(bird) {
+										bird.parts = {
+											body: bird.getObjectByName('bird_body'),
+											head: bird.getObjectByName('bird_head'),
+											right: bird.getObjectByName('bird_right'),
+											left: bird.getObjectByName('bird_left'),
+											foot: bird.getObjectByName('bird_foot')
+										}
+										bird.add(bird.getObjectByName('bird_body'))
+										bird.parts.body.add(bird.getObjectByName('bird_head'))
+										bird.parts.body.add(bird.getObjectByName('bird_right'))
+										bird.parts.body.add(bird.getObjectByName('bird_left'))
+										bird.parts.body.add(bird.getObjectByName('bird_foot'))
+										bird.remove(bird.getObjectByName('core'))
+										for (var p in bird.parts) bird.parts[p].matrixAutoUpdate = false
+										
+										bird.parts.right.position.set(-4, 20, 0); bird.parts.right.rotateZ(-Math.PI/180 * 10)
+										bird.parts.left.position.set(4, 20, 0); bird.parts.left.rotateZ(Math.PI/180 * 10)
+										bird.parts.head.position.set(0, 17, 0)
+										bird.add(bird.health.mesh)
+										bird.health.mesh.position.set(0, 30, 0)
+										
+										
+									},
+
+								}
+								EnemyData.grenade_launcher = {
+									mesh: function() {
+										var g_launcher = grenade_launcher_proto.clone(true)
+										return g_launcher;
+									},
+									DPS: 30,
+									health: {full: 100},
+									velocity: new THREE.Vector3(),
+									raycs: {
+										foot: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0 , 10)
+									},
+									ondmg: function(src, data) {
+										this.health.HP -= src.DPS;
+										this.health.mesh.scale.y = this.health.HP/this.health.full<1/100?1/100:this.health.HP/this.health.full
+										if (this.health.HP <= 0) {
+											this.ondeath(data)
+											this.action.death.on = true
+											return;
+										}
+
+										this.health.prev = data.time;
+										this.health.mesh.material.color = new THREE.Color('red')
+									},
+									update_game: function(data) {
+										var g = 1100;
+										var intersections;
+										
+										
+										if (this.action.death.on) {
+											this.action.death.update_game(this, data)
+											return;
+										}
+										if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<600) {
+											this.action.respawn.update_game(this, data)
+										} else if (!this.active && this.location.distanceTo(data.player.position)>=600) this.spawnable = true;
+										if (data.player.dead || data.player.position.distanceTo(this.position)>800) {
+											this.action.death.update_game(this, data)
+											this.ondeath(data)
+										}
+										
+										if (!this.active) return;
+										this.velocity.y -= 1100 * data.delta
+										this.position.y += this.velocity.y * data.delta
+										
+										for (var rayc in this.raycs) {
+											this.raycs[rayc].ray.origin.copy(this.position)
+										}
+										this.raycs.foot.ray.origin.y += this.raycs.foot.far
+										intersections = this.raycs.foot.intersectObjects(data.scene.children)
+										for (var i=0 ; i<intersections.length ; i++) {
+											if (intersections[i].object.purpose === 'surface') {
+												this.velocity.y = 0
+												this.position.y = intersections[i].point.y
+												break;
+											}
+										}
+										
+										if (this.action.attack.on) this.action.attack.update_game(this, data)
+										
+										this.traverse(function(obj){obj.updateMatrix()})
+									},
+									action: {
+										attack: {
+											prev: 0,
+											on: true,
+											update_game: function(g_launcher, data) {
+												var g = -1100
+												if (g_launcher.position.distanceTo(data.player.position) > 300) return;
+												
+												if (g_launcher.position.x<data.player.position.x) {
+													if (g_launcher.parts.cannon.rotation.z > -Math.PI/4) {
+														g_launcher.parts.cannon.rotation.z -= 360 * Math.PI/180 * data.delta
+														return;
+													}
+													g_launcher.parts.cannon.rotation.z = -Math.PI/4
+												} else if ( g_launcher.position.x > data.player.position.x) {
+													if (g_launcher.parts.cannon.rotation.z < Math.PI/4) {
+														g_launcher.parts.cannon.rotation.z += 360 * Math.PI/180 * data.delta
+														return;
+													}
+													g_launcher.parts.cannon.rotation.z = Math.PI/4
+												}
+												
+												if (data.time - this.prev < .25 && g_launcher.parts.tip.position.y>25) {
+													g_launcher.parts.tip.position.y -= 60 * data.delta
+												} else if (data.time - this.prev < .5 && g_launcher.parts.tip.position.y < 30) {
+													g_launcher.parts.tip.position.y += 60 * data.delta
+												} else if (data.time - this.prev > 3) {
+													g_launcher.parts.tip.position.y = 30
+													for (var set=0 ; set<3 ; set++) {
+														if (g_launcher.others.proj.ready[set] === 3) {
+															this.prev = data.time
+															var launchPt = g_launcher.parts.tip.getWorldPosition()
+															var deltaX = data.player.position.x-launchPt.x
+															if (deltaX<0) deltaX *= -1
+															var deltaY = data.player.position.y-launchPt.y
+															var v = Math.sqrt((g * deltaX*deltaX) / (2 * (deltaY-deltaX)))
+															if (isNaN(v)) return;
+
+															g_launcher.action.fire.update_game(g_launcher, data, v, set);
+															break;
+														}
+													}
+												}
+											}
+										},
+										fire: {
+											on: false,
+											update_game: function(g_launcher, data, v, set) {
+												var proj = g_launcher.others.proj
+												for (var b=0 ; b<proj['set'+set].length ; b++) {
+													var vel = v
+													if (b === 1) vel *= 0.8
+													else if (b === 2) vel *= 1.2
+													proj['set'+set][b].action.startup.update_game(proj['set'+set][b], data, vel*(g_launcher.position.x<data.player.position.x?1:-1), vel)
+												}
+												
+												proj.ready[set] = 0
+											}
+										},
+										respawn: {
+											on: false,
+											update_game: function(g_launcher, data) {
+												g_launcher.spawnable = false
+												g_launcher.health.HP = g_launcher.health.full
+												g_launcher.health.mesh.scale.set(1, 1, 1); g_launcher.health.mesh.visible = true; g_launcher.health.mesh.material.color = new THREE.Color('darkgreen')
+												g_launcher.scale.set(1, 1, 1)
+												g_launcher.visible = true
+												g_launcher.position.copy(g_launcher.spawnPt)
+												g_launcher.traverse(function(obj){
+													obj.active = true
+												})
+												
+												g_launcher.action.attack.prev = 0
+												for (var i=0 ; i<3 ; i++) g_launcher.others.proj.ready[i] = 3
+												this.on = false
+											}
+										},
+										death: {
+											on: false,
+											update_game: function(g_launcher, data) {
+												g_launcher.position.set(data.scene.bounds.left-300, 0, 0)
+												this.on = false
+											}
+										}
+									},
+									ondeath: function(data) {
+										this.health.mesh.visible = false
+										this.traverse(function(obj) {
+											obj.active = false;
+										})
+									},
+									sfx: undefined,
+									setup: function(g_launcher) {
+										g_launcher.add(g_launcher.getObjectByName('grenade_launcher0'))
+										g_launcher.add(g_launcher.getObjectByName('grenade_launcher1'))
+										g_launcher.add(g_launcher.getObjectByName('grenade_launcher2'))
+										g_launcher.parts = {
+											cannon: g_launcher.getObjectByName('grenade_launcher0'),
+											body: g_launcher.getObjectByName('grenade_launcher1'),
+											tip: g_launcher.getObjectByName('grenade_launcher2')
+										}
+										for (var c in g_launcher.children)
+											if (g_launcher.children[c].name.substring(0, 16) !== 'grenade_launcher') 
+												g_launcher.remove(g_launcher.children[c])
+										for (var p in g_launcher.parts) g_launcher.parts[p].matrixAutoUpdate = false
+										g_launcher.remove(g_launcher.getObjectByName('core'))
+										
+										g_launcher.parts.cannon.position.y = 15
+										g_launcher.parts.cannon.add(g_launcher.parts.tip)
+										g_launcher.parts.tip.position.y = 30
+										
+										g_launcher.add(g_launcher.health.mesh); g_launcher.health.mesh.position.y = 55
+										g_launcher.position.set(level.bounds.left-300, 0, 0)
+									},
+									others: function(g_launcher) {
+										
+										var others = {}
+										others.proj = {
+											ready: [3, 3, 3],
+											set0: [],
+											set1: [],
+											set2: []
+										}
+										
+										for (var s=0 ; s<3 ; s++) {
+											for (var i=0 ; i<3 ; i++) {
+												others.proj['set'+s].push(new CannonBall(g_launcher, 's'+s+'b'+i))
+											}
+										}
+										
+										function CannonBall(source, name) {
+											var mesh = new THREE.Mesh(new THREE.SphereGeometry(10, 8),
+																								new THREE.MeshPhysicalMaterial({color: new THREE.Color('silver')})
+																							 )
+											sub.call(mesh)
+											mesh.matrixAutoUpdate = false
+											
+											function sub() {
+												this.src = source
+												this.name = name
+												this.purpose = 'enemy'
+												this.active = false
+												this.DPS = 50
+												this.velocity = new THREE.Vector3()
+												this.raycs = {
+													dir: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 20),
+													down: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 20)
+												}
+												this.update_game = function(data) {
+													if (!this.active) return;
+													var g = -1100
+													var intersections;
+													
+													this.velocity.y += g * data.delta
+													this.position.y += this.velocity.y * data.delta
+													for (var rayc in this.raycs) this.raycs[rayc].ray.origin.copy(this.position)
+														this.raycs.down.ray.origin.y += 10
+														intersections = this.raycs.down.intersectObjects(data.scene.children)
+														for (var i=0 ; i<intersections.length ; i++) {
+															if (intersections[i].object.purpose === 'surface') {
+																this.velocity.y = 0
+																this.position.y = intersections[i].point.y + this.raycs.down.far/2
+																this.velocity.x *= .9
+															}
+														}
+													
+													if (this.action.attack.on) this.action.attack.update_game(this, data)
+													else if (this.action.death.on) this.action.death.update_game(this, data)
+													
+													this.updateMatrix()
+												}
+												this.action = {
+													startup: {
+														update_game: function(ball, data, vx, vy) {
+															ball.velocity.set(vx, vy, 0)
+															ball.active = true
+															ball.action.attack.on = true
+															ball.position.copy(ball.src.parts.tip.getWorldPosition())
+															ball.updateMatrix()
+														}
+													},
+													attack: {
+														on: false,
+														update_game: function(ball, data) {
+															var g = 1100
+																										
+															ball.position.x += ball.velocity.x * data.delta
+															
+															if (Math.abs(ball.velocity.x) < .1 || ball.position.distanceTo(ball.src.spawnPt)>800) {
+																this.on = false
+																ball.action.death.on = true
+																ball.action.death.start = data.time
+																ball.velocity.x = 0
+															}
+														}
+													},
+													death: {
+														on: false,
+														start: undefined,
+														update_game: function(ball, data) {
+															if (data.time - this.start > 1) {
+																ball.position.set(data.scene.bounds.left - 300, 0, 0)
+																ball.src.others.proj.ready[+ball.name.charAt(1)]++;
+																
+																this.active = false
+																this.on = false
+																this.start = undefined
+																
+															}
+														}
+													}
+												}
+												this.ondeath = function(data) {
+													this.position.set(data.scene.bounds.left - 300, 0, 0)
+													this.active = false
+													this.action.attack.on = this.action.death.on = false
+													this.action.death.start = undefined
+													this.src.others.proj.ready[+this.name.charAt(1)]++
+													this.updateMatrix()
+												}
+											}
+											
+											return mesh;
+										}
+										return others;
+									}
+								}
+								EnemyData.soldierA = {
+									mesh: function() {
+										var soldierA = soldierA_proto.clone(true)
+										return soldierA;
+									},
+									DPS: 30,
+									health: {full: 110},
+									ondmg: function(src, data) {
+
+									},
+									update_game: function(data) {
+										if (!this.active) return;
+										
+										this.traverse(function(obj){obj.updateMatrix()})
+									},
+									action: {
+
+									},
+									ondeath: function(data) {
+
+									},
+									sfx: undefined,
+									setup: function(soldierA) {
+										soldierA.add(soldierA.getObjectByName('soldierA_body'))
+										soldierA.add(soldierA.getObjectByName('soldierA_right'))
+										soldierA.add(soldierA.getObjectByName('soldierA_left'))
+										soldierA.add(soldierA.getObjectByName('soldierA_foot'))
+										soldierA.add(soldierA.getObjectByName('soldierA_eye'))
+										soldierA.add(soldierA.getObjectByName('soldierA_shield'))
+										soldierA.add(soldierA.getObjectByName('soldierA_sword'))
+										soldierA.parts = {
+											body: soldierA.getObjectByName('soldierA_body'),
+											right: soldierA.getObjectByName('soldierA_right'),
+											left: soldierA.getObjectByName('soldierA_left'),
+											foot: soldierA.getObjectByName('soldierA_foot'),
+											eye: soldierA.getObjectByName('soldierA_eye'),
+											shield: soldierA.getObjectByName('soldierA_shield'),
+											sword: soldierA.getObjectByName('soldierA_sword')
+										}
+										for (var c=0 ; c<soldierA.children.length ; c++)
+											if (soldierA.children[c].name.substring(0, 8) !== 'soldierA')
+												soldierA.remove(soldierA.children[c])
+										soldierA.parts.right.position.x = -15
+										soldierA.parts.right.rotation.z = 30 * (Math.PI/180)
+										soldierA.parts.right.add(soldierA.parts.sword)
+										soldierA.parts.sword.position.x -= 25
+										soldierA.parts.left.position.x = 15
+										soldierA.parts.left.add(soldierA.parts.shield)
+										soldierA.parts.shield.position.x = 25
+										soldierA.parts.shield.material.side = THREE.DoubleSide
+										for (var p in soldierA.parts) soldierA.parts[p].matrixAutoUpdate = false
+									},
+									others: function(soldierA) {
+
+									}
+								}
+								level.loadcheck++
+							}
+						)
+					}
+					function updateB(data) {
+						if (level.loadcheck === level.loadcheck_max - 1) {
+							
+							var g_launcher0 = new G_Launcher(new THREE.Vector3(1000, 200, 0), new THREE.Vector3(1000, 200, 0))
+							level.meshes.push(g_launcher0)
+
+							
+							var directional = new THREE.DirectionalLight('white', .3)
+							directional.position.set(0, 100, 150)
+							level.meshes.push(directional)
+							//level.meshes.push(newBlock(-100, 200, 0, 100, 50))
+
+							level.events.setup.on = false
+							level.events.respawn.on = true
+							level.loadcheck++
+							level.meshloaded = true
+							
+							function G_Launcher(loc, spawn) {
+								var g_launcher = new Enemy(EnemyData.grenade_launcher)
+								g_launcher.location.copy(loc)
+								g_launcher.spawnPt.copy(spawn)
+								g_launcher.traverse(function(obj){
+									if (obj.purpose === 'healthbar') return;
+									level.enemies.push(obj)
+								})
+								for (var i=0 ; i<3 ; i++) {
+									for (var j=0 ; j<g_launcher.others.proj['set'+i].length ; j++) {
+										g_launcher.others.proj['set'+i][j].position.set(level.bounds.left - 300, 0, 0)
+										g_launcher.others.proj['set'+i][j].updateMatrix()
+										level.meshes.push(g_launcher.others.proj['set'+i][j])
+										level.enemies.push(g_launcher.others.proj['set'+i][j])
+									}
+								}
+								return g_launcher;
+							}
+							
+							function Bird(loc, spawn, v0) {
+								var bird = new Enemy(EnemyData.bird)
+								bird.location.copy(loc)
+								bird.spawnPt.copy(spawn)
+								bird.v0.copy(v0)
+								bird.traverse(function(obj){level.enemies.push(obj)})
+								return bird;
+							}
+						}
+					}
+				}
+			},
+			respawn: {
+				on: true,
+				start: undefined,
+				spawnPt: new THREE.Vector3(0, 50, 0),
+				update_game: function(data) {
+					
+					var ready = data.scene.getObjectByName('ready')
+					if (document.getElementById('screen_changer').style.display!=='none') $('#screen_changer').fadeOut(250)
+					
+					if (this.start === undefined) {
+						this.start = data.time
+						
+						data.scene.background = new THREE.Color('lightblue')
+						//data.scene.background = new THREE.TextureLoader().load('../images/stage1a.jpg')
+						
+						$('#audio-background').empty()
+						$('#audio-background').append('<source src="audio/theskiver.mp3" type="audio/mpeg" loop>')
+						document.getElementById('audio-background').volume = .3
+						document.getElementById('audio-background').currentTime = 0
+						document.getElementById('audio-background').load()
+						document.getElementById('audio-background').play()
+						
+						while (level.hearts.length < data.player.game.lives) level.hearts.push(level.hearts[0].clone(true))
+						while (level.hearts.length > data.player.game.lives) data.scene.remove(level.hearts.pop())
+						for (var i=0 ; i<level.hearts.length ; i++) data.scene.add(level.hearts[i])
+						
+						ready.visible = true
+						ready.scale.set(1, 1, 1)
+						ready.material.transparent = true
+						ready.material.opacity = 0
+						
+						if (level.events.boss.on) {
+							level.events.boss.on = false
+							level.events.boss.engaged = false
+							level.events.boss.start = undefined
+							level.events.preboss.on = true
+							//data.camera.position.set(4150, 850, 200)
+							//data.player.position.set(4150, 850, 0)
+							level.boss.action.spawn.update_game(level.boss, data)
+							ready.scale.set(.5, .5, .5)
+							ready.position.set(-ready.geometry.boundingSphere.radius*.5+4150, 875, 50)
+							for (var enemy in level.enemies) if (level.enemies[enemy].ondeath) level.enemies[enemy].ondeath(data)
+						} else {
+							ready.position.set(-ready.geometry.boundingSphere.radius, 150, -data.camera.position.z/2)
+							data.camera.position.set(0, 55, 200)
+							data.player.position.copy(this.spawnPt)
+						}
+						
+						data.scene.add(data.player)
+						data.scene.add(data.player.charge1); data.scene.add(data.player.charge2)
+						data.scene.add(data.player.game.health.mesh); data.player.game.health.mesh.position.y += 150; data.player.game.health.mesh.visible = true
+						data.player.dead = null; data.player.game.health.HP = data.player.game.health.full;
+						data.player.controls.enabled = false
+						data.player.game.left = false; 
+						if (data.player.animation) data.player.animation.stop_right()
+						
+						for (var enemy in level.enemies) if (level.enemies[enemy].ondeath && level.enemies[enemy]!==level.boss) level.enemies[enemy].ondeath(data)
+						level.loaded = true
+					} else if (data.time - this.start > 4) {
+						
+						data.player.game.health.mesh.visible = true
+						//level.events.stage.on = true
+						ready.material.opacity -= (0.1);
+						if (ready.material.opacity < 0.1) {
+							data.player.controls.enabled = true
+							if (!level.events.preboss.on) level.events.stage.on = true
+							ready.visible = false
+							this.on = false
+							this.start = undefined
+						}
+					} else if (data.time - this.start > 2) {
+						if (data.camera.position.z < 300 && data.player) {
+							data.camera.position.z += 2;
+							ready.position.z += 2
+							if (data.camera.position.y < 55) data.camera.position.y += .5;
+						}
+					} else if (data.time - this.start > 1) {
+						ready.material.opacity += 0.05
+					} 
+					
+					ready.updateMatrix()
+					
+				}
+			},
+			stage: {
+				start: undefined,
+				on: false,
+				update_game: function(data) {
+
+					if (data.camera.position.z < 300 && data.player) {
+						data.camera.position.z += 2;
+						if (data.camera.position.y < 55) data.camera.position.y += .5;
+					}
+					else if (data.player) {
+						if (data.player.dead===null) {
+			
+							var dif = Math.abs(data.camera.position.x-data.player.position.x);
+
+							if (dif>20) {
+								data.camera.position.x = data.player.position.x + 20*(data.camera.position.x>data.player.position.x?1:-1);
+								data.camera.position.x = Math.min(data.camera.position.x, data.scene.bounds.right);
+								data.camera.position.x = Math.max(data.camera.position.x, data.scene.bounds.left+200);
+							}
+							dif = Math.abs(data.camera.position.y-data.player.position.y);
+							if (dif>20) data.camera.position.y = data.player.position.y + 20*(data.camera.position.y>data.player.position.y?1:-1);
+							data.camera.position.y = Math.max(data.camera.position.y, data.scene.bounds.bottom+200)
+							data.camera.position.y = Math.min(data.camera.position.y, data.scene.bounds.top-200)
+						}
+					}
+					
+					if (level.flags.wall1 && data.player.position.x > 3180) {
+						level.flags.wall1 = false
+						data.scene.getObjectByName('wall1').visible = false
+					} else if (!data.player.dead && data.player.position.x<=3180 && !level.flags.wall1) {
+						level.flags.wall1 = true
+						data.scene.getObjectByName('wall1').visible = true
+					}
+					if (data.player.position.x>3475 && data.player.position.y<380 + 33 && data.player.position.y>200+33) {
+						data.scene.getObjectByName('collapse0').visible = false
+					}
+					if (false) {
+						data.scene.getObjectByName('door1').action.close.on = true
+						data.scene.getObjectByName('door1').action.open.on = false
+						this.on = false
+						this.start = undefined
+						level.events.preboss.on = true
+						boss.action.spawn.update_game(boss, data)
+						for (var enemy in level.enemies) if (level.enemies[enemy].ondeath) level.enemies[enemy].ondeath(data)
+					}
+				}
+			},
+			preboss: {
+				start: undefined,
+				on: false
+			},
+			boss: {
+				start: undefined,
+				on: false
+			}
 		}
 		
 	})
+	
+	function newBlock (x, length, y, height, width) {
+		var geometry = new THREE.BoxGeometry(length, height, width);
+		var n = Math.random()
+		var material = new THREE.MeshPhysicalMaterial({color: new THREE.Color((250 - Math.floor(160*n))/250, (250 - Math.floor(160*n))/250, (250 - Math.floor(160*n))/250)});
+		var mesh = new THREE.Mesh(geometry, material);
+		mesh.position.set(x+length/2, y-height/2, 0);
+		mesh.purpose = 'surface';
+		mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+		return mesh;
+	}
+
+	function newCore(size) {
+		var geometry = new THREE.Geometry();
+		geometry.vertices.push(new THREE.Vector3(0, size*Math.sqrt(3)/4, 0),
+													 new THREE.Vector3(-size/2, -size*Math.sqrt(3)/4, 0),
+													 new THREE.Vector3(size/2, -size*Math.sqrt(3)/4, 0)
+													)
+		geometry.faces.push( new THREE.Face3(0, 1, 2));
+		var material = new THREE.MeshBasicMaterial({color: new THREE.Color('red')});
+		var mesh = new THREE.Mesh(geometry, material);
+		mesh.name = 'core';
+		return mesh;
+	}
+
+	function newSFX(src, vol, loop) {
+		var audio = document.createElement('audio');
+		var source = document.createElement('source');
+		audio.preload = 'none';
+		source.src = src;
+		source.type = 'audio/wav';
+		audio.appendChild(source);
+		if (vol !== undefined) audio.volume = vol;
+		if (loop !== undefined) audio.loop = true;
+		return audio;
+	};
 })();

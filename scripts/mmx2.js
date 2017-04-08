@@ -20,6 +20,7 @@
 	var colorN;
 	var Level;
 	var level_loaded;
+	var sfx;
 	
 	
 	startup();
@@ -34,12 +35,15 @@
 		scene = new THREE.Scene();
 		scene.bounds = {left: -1000, right: 1000, bottom: -500};
 		scene.background = new THREE.TextureLoader().load('images/title.jpg');
+		sfx = {}
 		
 		var hemisphere = new THREE.HemisphereLight('white', 1);
 		hemisphere.position.set(0, 200, 0)
+		hemisphere.name = 'startup'
 		scene.add(hemisphere)
 		var directional = new THREE.DirectionalLight('white', 1);
 		directional.position.set(0, 0, 100)
+		directional.name = 'startup'
 		//scene.add(directional)
 		var point = new THREE.PointLight('white', 10, 70);
 		
@@ -69,7 +73,7 @@
 		fontLoader.load(
 			'../fonts/optimer_regular.typeface.json',
 			function(response) {
-				var textGeometry = new THREE.TextGeometry('Single', {font: response, size: 6, height: 1});
+				var textGeometry = new THREE.TextGeometry('Single (in development)', {font: response, size: 6, height: 1});
 				textGeometry.computeBoundingSphere();
 				var mesh = new THREE.Mesh(textGeometry, new THREE.MeshLambertMaterial({color: new THREE.Color(0xff3333)}))
 				mesh.name = 'title_single';
@@ -84,23 +88,35 @@
 				scene.add(mesh)
 			}
 		)
+		sfx.titleselect = newSFX('../audio/titleselect.wav', 0.2)
+		sfx.titleselected = newSFX('../audio/titleselected.wav', 0.075)
 		
 		$(document).on('keydown', function(e) {
 			var key = e.keyCode;
 			if (titlescreen) {
 				if (key === 38) {
+					sfx.titleselect.pause()
+					sfx.titleselect.currentTime = 0
+					sfx.titleselect.play()
 					var single = scene.getObjectByName('title_single');
 					single.material.color = new THREE.Color(0xff3333); single.selected = true;
 					var multi = scene.getObjectByName('title_multi');
 					multi.material.color = new THREE.Color('white'); multi.selected = false;
 				} else if (key === 40) {
+					sfx.titleselect.pause()
+					sfx.titleselect.currentTime = 0
+					sfx.titleselect.play()
 					var single = scene.getObjectByName('title_single');
 					single.material.color = new THREE.Color('white'); single.selected = false;
 					var multi = scene.getObjectByName('title_multi');
 					multi.material.color = new THREE.Color(0xff3333); multi.selected = true;
 				}
 				if (key === 13) {
-					
+					sfx.titleselected.pause()
+					sfx.titleselected.currentTime = 0
+					sfx.titleselected.play()
+					var audio = document.getElementById('audio-background')
+					audio.pause()
 					if (scene.getObjectByName('title_multi').selected) {
 						titlescreen = false;
 						$('#screen_changer').slideDown(1000).delay(1000).queue(function(){
@@ -110,7 +126,6 @@
 					} else {
 						titlescreen = false;
 						$('#screen_changer').slideDown(1000).queue(function(){
-							console.log('single player')
 							init_single();
 							SINGLE = true;
 							return;
@@ -150,8 +165,8 @@
 		camera.position.z = 300;
 		var grid = new THREE.GridHelper(20000, 20000/100, new THREE.Color('yellow'))
 		grid.rotation.x = Math.PI/2
-		scene.background = new THREE.Color(0x333333)
-		scene.add(grid)
+		scene.background = new THREE.Color(0x00ccff)
+		//	scene.add(grid)
 		
 		$(document).on('keydown', function(e) {
 			var key = e.keyCode;
@@ -189,7 +204,7 @@
 				user.game.health.mesh.visible = true;
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
-				user.position.set(3600, 950, 0)
+				user.position.set(100, 900, 0)
 			}
 		}).on('keyup', function(e) {
 			var key = e.keyCode;
@@ -213,6 +228,61 @@
 		
 		$setup.find('#set_controls').click()
 		
+		/*
+		var mesh = new THREE.Mesh(new THREE.BoxGeometry(300, 100, 50), new THREE.MeshPhysicalMaterial())
+		mesh.purpose = 'surface'
+		mesh.position.set(-300, 0, 0)
+		mesh.velocity = new THREE.Vector3(10,0 , 0)
+		mesh.down = new THREE.Vector3(0, -50, 0)
+		mesh.name = 'moving'
+		mesh.rotation.z = 20 * Math.PI/180
+		mesh.update_game = function(data) {
+			if (mesh.position.y > 100) mesh.velocity.y = -30;
+			else if (mesh.position.y < -100)  mesh.velocity.y = 30 ;
+			//mesh.position.y += mesh.velocity.y * data.delta
+			mesh.position.x += mesh.velocity.x * data.delta
+			
+			if (mesh.position.x>-300) mesh.velocity.x = -10;
+			else if (mesh.position.x<-500) mesh.velocity.x = 10;
+		}
+		scene.add(mesh)
+		
+		var mesh2 = new THREE.Mesh(new THREE.SphereGeometry(33, 16), new THREE.MeshPhysicalMaterial())
+		mesh2.purpose = 'test'
+		mesh2.position.set(-200, 200, 0)
+		mesh2.velocity = new THREE.Vector3(0, 0, 0)
+		mesh2.raycs = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 33)
+		mesh2.other = {
+			v: new THREE.Vector3()
+		}
+		mesh2.update_game = function(data) {
+			mesh2.position.y += Math.min(mesh2.other.v.y * data.delta - 1, 0)
+			
+			mesh2.raycs.ray.origin.copy(mesh2.position)
+			mesh2.velocity.y -= 1100 * data.delta
+			var intersections = mesh2.raycs.intersectObjects(data.scene.children)
+			for (var i=0 ; i<intersections.length ; i++) {
+				if (intersections[i].object.purpose === 'surface') {
+					mesh2.velocity.y = 0
+					mesh2.position.y = intersections[i].point.y + mesh2.raycs.far
+					
+					if (intersections[i].object.velocity) {
+						mesh2.other.v.copy (intersections[i].object.velocity)
+					}
+						
+					break;
+				}
+			}
+			if (!intersections.length) {
+				//console.log('no intersections')
+				mesh2.other.v.set(0, 0, 0)
+			}
+			mesh2.position.y += mesh2.velocity.y * data.delta
+		}
+		
+		scene.add(mesh2)
+		*/
+		
 		
 	}
 	
@@ -220,25 +290,37 @@
 		var delta = clock.getDelta();
 		var time = clock.getElapsedTime();
 		
-		if (!(Level && Level.loaded)) return
-		if (Level && Level.loaded && level_loaded===false) {
+		if (Level && Level.cleared) {
+			for (var i=scene.children.length-1 ; i>=0 ; i--) {
+				if (scene.children[i].name === 'startup') continue
+				scene.remove(scene.children[i])
+			}
+			Level = new LEVEL[Level.id]
+			level_loaded = false
+			console.log(scene)
+		}
+		if (!(Level && Level.loaded) && !(Level && Level.events.setup)) return;
+		if (Level && (Level.loaded||Level.meshloaded) && level_loaded===false) {
 			
 			level_loaded = true;
 			for (var obj in Level.meshes) scene.add(Level.meshes[obj]);
 			scene.bounds = Level.bounds;
+
 			//user.game.health.mesh.position.y += 150; scene.add(user.game.health.mesh);
 			$('#screen_changer').dequeue().slideUp(1000);
+			
 		}
 		
 		if (user) updatePlayer(user, delta);
-		
-		var data = {window: window, camera: camera, delta:Math.min(delta, 1/60), scene:scene, player: user, time: time};
+		var data = {renderer: renderer, window: window, camera: camera, delta:Math.min(delta, 1/60), scene:scene, player: user, time: time};
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
 			if (scene.children[ob].update_game(data) === -1) {
 				scene.remove(scene.children[ob]);
 			}
 		}
-		if (level_loaded) Level.update_game(data)
+		
+		
+		if ((Level && Level.events.setup) || level_loaded) Level.update_game(data)
 		renderer.render(scene, camera);
 	}
 	
@@ -665,6 +747,11 @@
 		renderer.render(scene, camera)
 		var $screen_changer = $('#screen_changer');
 		if ($screen_changer.css('display') === 'block') $screen_changer.slideUp(1000);
+		$('#audio-background').empty()
+		$('#audio-background').append('<source src="audio/x5xstart.mp3" type="audio/mpeg" loop>')
+		document.getElementById('audio-background').currentTime = 0
+		document.getElementById('audio-background').load()
+		document.getElementById('audio-background').play()
 	}
 	
 	function updatePlayer(player, delta) {
@@ -674,19 +761,24 @@
 		var Vx = 130;
 		var _dashSpd = 260;
 		var time = player.game.clock.getElapsedTime();
-		var isAirborne = player.game.isAirborne(scene)
+			
+		player.position.x += player.game.other.v.x * delta
+		//if (player.game.other.onground && player.game.other.v.y<0) player.position.y += player.game.other.v.y * delta - 1
+		if (player.game.other.down.y<0 && !player.game.airborne) player.position.y += player.game.other.down.y * delta - 1
 		
 		for (bound in player.bounds) player.bounds[bound].ray.origin.copy(player.position);
+		
 		player.bounds.rightUp.ray.origin.x += 4;
 		player.bounds.leftUp.ray.origin.x -= 4;
 		player.bounds.botRight.ray.origin.y -= 26;
 		player.bounds.botLeft.ray.origin.y -= 26;
-		player.bounds.rightFoot.ray.origin.x += 7; player.bounds.rightFoot.ray.origin.y += 0;
-		player.bounds.leftFoot.ray.origin.x += -7; player.bounds.leftFoot.ray.origin.y += 0;
+		//	player.bounds.rightFoot.ray.origin.x += 7; player.bounds.rightFoot.ray.origin.y += 0;
+		//	player.bounds.leftFoot.ray.origin.x += -7; player.bounds.leftFoot.ray.origin.y += 0;
 		if (player.game.dashing && !isAirborne) {
 			player.bounds.rightUp.ray.origin.y -= 6;
 			player.bounds.leftUp.ray.origin.y -= 6;
 		}
+		var isAirborne = player.game.isAirborne(scene)
 
 		if (player.controls.enabled && keysMap[player.controls.fire]) {
 			if (player.game.fire.timer === null) player.game.fire.timer = time;
@@ -859,15 +951,23 @@
 			}
 		}
 		var intersections = [];
+		flag = false
 		intersections.push(player.bounds.botRight.intersectObjects((Level&&Level.enemies)?scene.children.concat(Level.enemies):scene.children));
 		for (var obj in intersections[0]) {
 			var intersected = intersections[0][obj]
 			if (intersected.object.purpose === 'surface') {
-				player.velocity.x = Math.min(0, player.velocity.x);
-				player.position.x = intersected.point.x - player.bounds.botRight.far;
+				//player.velocity.x = Math.min(0, player.velocity.x);
+				player.position.x = intersected.point.x - player.bounds.botRight.far - 1;
 				player.game.dashJ = false;
 				player.game.dashing = false;
 				player.game.tap_dashing = false;	
+				
+				if (intersected.object.velocity && !flag) {
+					player.game.other.v.copy(intersected.object.velocity)
+					player.position.y += player.game.other.v.y * delta
+					flag = true
+				}
+				
 				if (isAirborne && !keysMap[player.controls.right] && player.velocity.y<=0) {
 					player.game.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
@@ -900,11 +1000,18 @@
 		for (var obj in intersections[1]) {
 			var intersected = intersections[1][obj]
 			if (intersected.object.purpose === 'surface') {
-				player.velocity.x = Math.max(0, player.velocity.x);
-				player.position.x = intersected.point.x + player.bounds.botLeft.far;
+				//player.velocity.x = Math.max(0, player.velocity.x);
+				player.position.x = intersected.point.x + player.bounds.botLeft.far + 1;
 				player.game.dashJ = false;
 				player.game.dashing = false;
 				player.game.tap_dashing = false;
+
+				if (intersected.object.velocity && !flag) {
+					player.game.other.v.copy(intersected.object.velocity)
+					player.position.y += player.game.other.v.y * delta
+					flag = true
+				}
+				
 				if (isAirborne && !keysMap[player.controls.left] && player.velocity.y<=0) {
 					player.game.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
@@ -936,11 +1043,18 @@
 		for (var obj in intersections[2]) {
 			var intersected = intersections[2][obj]
 			if (intersected.object.purpose === 'surface') {
-				player.velocity.x = Math.min(0, player.velocity.x);
-				player.position.x = intersected.point.x - player.bounds.midRight.far;
+				//player.velocity.x = Math.min(0, player.velocity.x);
+				player.position.x = intersected.point.x - player.bounds.midRight.far - 1;
 				player.game.dashJ = false;
 				player.game.dashing = false;
 				player.game.tap_dashing = false;
+
+				if (intersected.object.velocity && !flag) {
+					player.game.other.v.copy(intersected.object.velocity)
+					player.position.y += player.game.other.v.y * delta
+					flag = true
+				}
+				
 				if (isAirborne && !keysMap[player.controls.right] && player.velocity.y<=0) {
 					player.game.airborne = true;
 					if (player.animation && player.velocity.y+100+g*delta>=0) {
@@ -972,11 +1086,17 @@
 		for (var obj in intersections[3]) {
 			var intersected = intersections[3][obj]
 			if (intersected.object.purpose === 'surface') {
-				player.velocity.x = Math.max(0, player.velocity.x);
-				player.position.x = intersected.point.x + player.bounds.midLeft.far;
+				//player.velocity.x = Math.max(0, player.velocity.x);
+				player.position.x = intersected.point.x + player.bounds.midLeft.far + 1;
 				player.game.dashJ = false;
 				player.game.dashing = false;
 				player.game.tap_dashing = false;
+				
+				if (intersected.object.velocity && !flag) {
+					player.game.other.v.copy(intersected.object.velocity)
+					player.position.y += player.game.other.v.y * delta
+					flag = true
+				}
 				
 				if (isAirborne && !keysMap[player.controls.left] && player.velocity.y<=0) {
 					player.game.airborne = true;
@@ -1014,6 +1134,7 @@
 			if (player.game.airborne) player.game.can_jump = false;
 			if (player.velocity.y<0 && isAirborne && player.animation && player.velocity.y+100+g*delta>=0) {player.animation.fall();}
 		}
+
 		if (player.controls.enabled && (player.game.can_wJump||player.game.onWall) && player.velocity.y<=0) {
 			if (player.game.can_wJump&&player.game.can_jump && keysMap[player.controls.jump] && player.game.wJump_cast === null) player.game.wJump_cast = time;
 			if (player.game.can_wJump && player.game.can_jump && player.game.wJump_cast && time-player.game.wJump_cast>0.0) {
@@ -1049,10 +1170,12 @@
 			}
 			else player.velocity.y -= g * delta
 		}
-		else player.velocity.y -= g * delta;
+		else {
+			player.velocity.y -= g * delta;
+		}
 		player.velocity.y = Math.max(-450, player.velocity.y)
 		
-		
+		flag = false
 		intersections.push(player.bounds.rightFoot.intersectObjects((Level&&Level.enemies)?scene.children.concat(Level.enemies):scene.children))
 		for (var obj in intersections[4]) {
 			var intersected = intersections[4][obj];
@@ -1064,9 +1187,17 @@
 					player.game.dashing = false;
 					player.game.tap_dashing = false;
 				}
+				flag = true
+				if (intersected.object.velocity) {
+					player.game.other.onground = true
+					player.game.other.v.copy(intersected.object.velocity)
+				}
+				if (intersected.object.down) {
+					player.game.other.down.copy(intersected.object.down)
+				}
+				
 				player.position.y = player.bounds.rightFoot.y+intersections[4][obj].point.y;
 				player.velocity.y = 0;
-				flag = true;
 				break;
 			} else if (intersected.object.active && intersected.object.purpose === 'enemy' && time-player.game.health.invincible>=1) {
 				var enemy = intersected.object;
@@ -1090,7 +1221,15 @@
 					player.game.dashJ = false;
 					player.game.dashing = false;
 					player.game.tap_dashing = false;
-				} 
+				}
+				if (!flag && intersected.object.velocity) {
+					player.game.other.v.onground = true
+					player.game.other.v.copy(intersected.object.velocity)
+				}
+				if (intersected.object.down) {
+					player.game.other.down.copy(intersected.object.down)
+				}
+				
 				player.position.y = player.bounds.leftFoot.y+intersections[5][obj].point.y;
 				player.velocity.y = 0;
 				break;
@@ -1106,7 +1245,13 @@
 				player.game.health.prev = time;*/
 			}
 		}
-
+		
+		
+		if (!intersections[4].length && !intersections[5].length) {
+			player.game.other.onground = false
+			player.game.other.down.set(0, 0, 0)
+		}
+		if ( (intersections[0].length===0&&intersections[1].length===0&&intersections[2].length===0&&intersections[3].length===0&&intersections[4].length===0&&intersections[5].length===0) ) player.game.other.v.set(0, 0, 0)
 		
 		if (time-player.game.flinch.timer<.2) {
 			player.velocity.x = player.game.flinch.vx;
@@ -1168,11 +1313,13 @@
 			}
 		}
 		
-
+		
 		
 		if (!player.game.can_wJump && !player.game.onWall) {
 			player.game.wJump_cast = null;
-			if (player.velocity.y<0) player.game.airborne = true;
+			if (player.velocity.y<0) {
+				player.game.airborne = true;
+			}
 		}
 
 		if (player.animation) player.animation.update(delta);
@@ -1182,10 +1329,13 @@
 		health.mesh.position.copy(player.position);
 		if (player !== user) {
 			health.HP = health.next;
-			if (health.HP > 0) player.dead = null;
+			if (health.HP > 0) {
+				player.dead = null
+			}
 		}
 		if (!player.dead) {
 			if (player.position.y<scene.bounds.bottom || health.HP <= 0) {
+				player.game.lives = Math.max(player.game.lives-1, 0)
 				player.sfx['death'].play()
 				player.game.fire.timer = null;
 				player.charge.a.scale.set(1, 1, 1); player.charge.b.scale.set(1, 1, 1);
