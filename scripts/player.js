@@ -313,7 +313,7 @@ var X = {
 		
 		this.ondmg = function(obj, data) {
 			var time = this.game.clock.getElapsedTime();
-			if (time - this.game.health.invincible < 1) return;
+			if (time - this.game.health.invincible < 1) return false;
 			
 			//if (obj.DPS >= this.game.flinch.min) this.game.health.invincible = time
 			var dir;
@@ -329,6 +329,7 @@ var X = {
 			this.game.health.HP -= obj.DPS;
 			this.game.health.mesh.material.color = new THREE.Color('red');
 			this.game.health.prev = this.game.clock.getElapsedTime();
+			return true;
 		}
 		
 		this.action = {

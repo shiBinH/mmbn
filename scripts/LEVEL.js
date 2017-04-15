@@ -1980,6 +1980,12 @@ var LEVEL = [];
 											}
 										}
 										
+										if (data.time - this.health.prev > .75) {
+											if (this.health.mesh.scale.y > 0.5) this.health.mesh.material.color.set(new THREE.Color('darkgreen'));
+											else if (this.health.mesh.scale.y > 0.2) this.health.mesh.material.color.set(0xffff00);
+											else this.health.mesh.material.color.set(0xff6600);
+										}
+										
 										if (this.action.attack.on) this.action.attack.update_game(this, data)
 										
 										this.traverse(function(obj){obj.updateMatrix()})
@@ -2064,6 +2070,7 @@ var LEVEL = [];
 										death: {
 											on: false,
 											update_game: function(g_launcher, data) {
+												if (!this.on) return;
 												g_launcher.position.set(data.scene.bounds.left-300, 0, 0)
 												this.on = false
 											}
@@ -2217,30 +2224,327 @@ var LEVEL = [];
 										return soldierA;
 									},
 									DPS: 30,
-									health: {full: 110},
+									health: {full: 100},
+									velocity: new THREE.Vector3(50, 0, 0),
+									raycs: {
+										down: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 34),
+										left: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 200),
+										right: new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), 0, 200)
+									},
+									prev: {
+										pos: new THREE.Vector3()
+									},
+									landed: false,
 									ondmg: function(src, data) {
+										this.health.HP -= src.DPS;
+										this.health.mesh.scale.y = this.health.HP/this.health.full<1/100?1/100:this.health.HP/this.health.full
+										if (this.health.HP <= 0) {
+											this.ondeath(data)
+											this.action.death.on = true
+											return;
+										}
 
+										this.health.prev = data.time;
+										this.health.mesh.material.color = new THREE.Color('red')
 									},
 									update_game: function(data) {
+										var g = -1100
+										var intersections
+										var airborne = true
+										if (this.action.death.on) {
+											this.action.death.update_game(this, data)
+											return;
+										}
+										if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<600) {
+											this.action.respawn.update_game(this, data)
+										} else if (!this.active && this.location.distanceTo(data.player.position)>=600) this.spawnable = true;
+										if (data.player.dead || data.player.position.distanceTo(this.position)>800) {
+											this.action.death.update_game(this, data)
+											this.ondeath(data)
+										}
 										if (!this.active) return;
+									
 										
+										this.velocity.y += g * data.delta
+										
+										for (var rayc in this.raycs) {
+											this.raycs[rayc].ray.origin.copy(this.position)
+										}
+										intersections = this.raycs.down.intersectObjects(data.scene.children)
+										for (var i=0 ; i<intersections.length ; i++) {
+											if (intersections[i].object.purpose === 'surface') {
+												airborne = false
+												this.prev.pos.copy(this.position)
+												this.velocity.y = 0
+												this.position.y = intersections[i].point.y + this.raycs.down.far
+												this.landed = true
+												break;
+											}
+										}
+										if (!this.action.attack.on) {
+											var rays = ['left','right']
+											for (var i=0 ; i<rays.length ; i++) {
+												intersections = this.raycs[rays[i]].intersectObject(data.player, true)
+												if (intersections.length) {
+													this.action.attack.on = true;
+													break;
+												}
+											}
+										}
+										if (airborne && this.landed) {
+											this.position.copy(this.prev.pos)
+											this.velocity.y = 0
+										}
+										if (this.action.attack.on) this.action.attack.update_game(this, data, airborne)
+										else if (this.action.walk.on && this.landed) this.action.walk.update_game(this, data, airborne)
+										this.position.y += this.velocity.y * data.delta
+													
+										if (data.time - this.health.prev > .75) {
+											if (this.health.mesh.scale.y > 0.5) this.health.mesh.material.color.set(new THREE.Color('darkgreen'));
+											else if (this.health.mesh.scale.y > 0.2) this.health.mesh.material.color.set(0xffff00);
+											else this.health.mesh.material.color.set(0xff6600);
+										}
+
 										this.traverse(function(obj){obj.updateMatrix()})
 									},
 									action: {
+										walk: {
+											on: false,
+											update_game: function(soldierA, data, airborne) {
+												if (airborne) {
+													soldierA.position.copy(soldierA.prev.pos)
+													soldierA.velocity.y = 0
+													soldierA.velocity.x *= -1
+												}
+												if (soldierA.velocity.x>0 && soldierA.parts.body.rotation.y<Math.PI/2) 
+													soldierA.parts.body.rotation.y += 5 * Math.PI * data.delta
+												else if (soldierA.velocity.x<0 && soldierA.parts.body.rotation.y>-Math.PI/2)
+													soldierA.parts.body.rotation.y += -5 * Math.PI * data.delta
+												soldierA.position.x += soldierA.velocity.x * data.delta
+											}
+										},
+										attack: {
+											reset: function() {
+												this.start = undefined; this.on = false; this.turn.dir = undefined
+												this.phase1.on = false; this.phase2.x0 = undefined
+												this.phase2.on = false; this.phase2.x0 = undefined; this.phase2.start = undefined; this.phase2.stop = undefined
+											},
+											start: undefined,
+											on: false,
+											turn: {
+												dir: undefined,
+											},
+											phase1: {
+												on: false,
+												x0: undefined
+											},
+											phase2: {
+												on: false,
+												x0: undefined,
+												start: undefined,
+												stop: undefined
+											},
+											update_game: function(soldierA, data, airborne) {
+												var intersections;
+												if (this.start === undefined) {
+													if (this.turn.dir) {
+														if (soldierA.parts.body.rotation.y !== this.turn.dir * Math.PI/2) soldierA.parts.body.rotation.y += +this.turn.dir * 10 * Math.PI/2 * data.delta
+														if (Math.abs(soldierA.parts.body.rotation.y)>= Math.PI/2) {
+															soldierA.parts.body.rotation.y = this.turn.dir * Math.PI/2
+															soldierA.velocity.x = this.turn.dir * 400
+															this.turn.dir = undefined
+															this.turn.finish = undefined
+															this.start = data.time
+															this.phase1.x0 = soldierA.position.x
+															this.phase1.on = true
+															if (soldierA.parts.sword.rotation.x > -Math.PI * 7/18) soldierA.parts.sword.rotation.x += -Math.PI * data.delta
+															if (soldierA.parts.right.rotation.y < Math.PI * 7/18) soldierA.parts.right.rotation.y += Math.PI * data.delta
+															if (soldierA.parts.right.rotation.z > -Math.PI  * 7/18) soldierA.parts.right.rotation.z += -Math.PI * data.delta
+														}
+													} else if (Math.sign(soldierA.velocity.x) !== Math.sign(data.player.position.x-soldierA.position.x)) {
+														this.turn.dir = Math.sign(data.player.position.x-soldierA.position.x)
+													} else {
+														soldierA.velocity.x = Math.sign(data.player.position.x-soldierA.position.x) * 400
+														this.start = data.time
+														this.phase1.x0 = soldierA.position.x
+														this.phase1.on = true
+													}
 
+												} else if ( this.phase1.on && Math.abs(soldierA.parts.body.rotation.y)<Math.PI/2) {
+													soldierA.parts.body.rotation.y += Math.sign(soldierA.velocity.x) * 10 * Math.PI/2 * data.delta
+													if (soldierA.parts.sword.rotation.x > -Math.PI * 7/18) soldierA.parts.sword.rotation.x += - 3 * Math.PI * data.delta
+													if (soldierA.parts.right.rotation.y < Math.PI * 7/18) soldierA.parts.right.rotation.y += 3 * Math.PI * data.delta
+													if (soldierA.parts.right.rotation.z > -Math.PI * 7/18) soldierA.parts.right.rotation.z += -3 * Math.PI * data.delta
+												} else if (data.time - this.start <=0.5 && this.phase1.on) {
+													if (soldierA.parts.sword.rotation.x > -Math.PI * 7/18) soldierA.parts.sword.rotation.x += -3 * Math.PI * data.delta
+													if (soldierA.parts.right.rotation.y < Math.PI * 7/18) soldierA.parts.right.rotation.y += 3 * Math.PI * data.delta
+													if (soldierA.parts.right.rotation.z > -Math.PI * 7/18) soldierA.parts.right.rotation.z += -3 * Math.PI * data.delta
+												} else if (data.time - this.start > 0.5 && this.phase1.on) {
+													if (airborne) {
+														soldierA.position.copy(soldierA.prev.pos)
+														soldierA.velocity.y = 0
+														soldierA.velocity.x = 0
+														this.phase1.on = false
+														this.phase2.on = true
+														this.phase2.x0 = soldierA.position.x
+														this.phase2.start = data.time
+														this.turn.dir = Math.sign(data.player.position.x-soldierA.position.x)
+														soldierA.parts.right.rotation.z = Math.PI/6; soldierA.parts.right.rotation.y = 0
+														soldierA.parts.sword.rotation.x = 0
+														
+														return;
+													}
+													
+													if (soldierA.velocity.x<0) {
+														intersections = soldierA.raycs.left.intersectObject(data.player, true)
+														if (intersections.length) {
+															if (Math.abs(soldierA.position.x - intersections[0].point.x)<=60) {
+																var current = intersections[0].object
+																while (!current.ondmg) current = current.parent;
+																if (current.ondmg(soldierA.parts.sword)) {
+																	current.sfx.hit.pause()
+																	current.sfx.hit.currentTime = 0
+																	current.sfx.hit.play()
+																}
+															}
+														}
+													} else if (soldierA.velocity.x>0) {
+														intersections = soldierA.raycs.right.intersectObject(data.player, true)
+														if (intersections.length) {
+															if (Math.abs(soldierA.position.x - intersections[0].point.x)<=60) {
+																var current = intersections[0].object
+																while (!current.ondmg) current = current.parent;
+																if (current.ondmg(soldierA.parts.sword)) {
+																	current.sfx.hit.pause()
+																	current.sfx.hit.currentTime = 0
+																	current.sfx.hit.play()
+																}
+															}
+														}
+													}
+													soldierA.position.x += soldierA.velocity.x * data.delta
+													soldierA.parts.body.rotation.order = "YXZ"
+													if (soldierA.parts.right.rotation.z<Math.PI/3) soldierA.parts.right.rotation.z += 4 * Math.PI * data.delta
+													if (soldierA.parts.body.rotation.x<Math.PI/9) soldierA.parts.body.rotation.x += 1/5 * Math.PI * data.delta
+													
+													
+													if (Math.abs(soldierA.position.x - this.phase1.x0)>200) {
+														soldierA.velocity.x = 0
+														this.phase1.on = false
+														this.phase1.x0 = undefined
+														this.phase2.on = true
+														this.phase2.x0 = soldierA.position.x
+														this.phase2.start = data.time
+														this.turn.dir = Math.sign(data.player.position.x-soldierA.position.x)
+														
+														
+													}
+												} else if (this.phase2.on) {
+													
+													/*
+													if (this.turn.dir && soldierA.parts.body.rotation.y !== Math.PI/2 * this.turn.dir) {
+														if (soldierA.parts.body.rotation.y !== this.turn.dir*Math.PI/2) {
+															soldierA.parts.body.rotation.y += this.turn.dir * 10 * Math.PI/2 * data.delta
+															if (Math.abs(soldierA.parts.body.rotation.y)>=Math.PI/2) soldierA.parts.body.rotation.y = this.turn.dir * Math.PI/2
+														} 
+													}
+													else*/ if (data.time - this.phase2.start > 0.3 /*&& soldierA.parts.body.rotation.y === this.turn.dir * Math.PI/2*/) {
+														if (soldierA.velocity.x === 0) {
+															soldierA.velocity.x = 400 * this.turn.dir
+															soldierA.parts.body.rotation.y = this.turn.dir * Math.PI/2
+															soldierA.parts.right.rotation.z = -Math.PI/9; soldierA.parts.right.rotation.y = Math.PI * 5/6
+															soldierA.parts.sword.rotation.x = 0;
+															soldierA.parts.body.rotation.x = Math.PI/6
+															this.turn.dir = undefined
+														}
+													}  
+													if (airborne) {
+														soldierA.position.copy(soldierA.prev.pos)
+														soldierA.velocity.y = 0
+														soldierA.velocity.x = Math.sign(soldierA.velocity.x) * 50
+														this.phase2.on = false
+														this.phase2.x0 = undefined
+														this.phase2.start = undefined
+														this.start = undefined
+														this.on = false
+														soldierA.parts.right.rotation.z = Math.PI/6; soldierA.parts.right.rotation.y = 0
+														soldierA.parts.sword.rotation.x = 0
+														soldierA.parts.body.rotation.x = 0
+													}
+
+													if (!this.phase2.stop) soldierA.position.x += soldierA.velocity.x * data.delta
+													if (soldierA.velocity.x !== 0) {
+														if (soldierA.parts.right.rotation.y > 0) soldierA.parts.right.rotation.y -= 2 * Math.PI * data.delta
+														//if (soldierA.parts.right.rotation.z > -Math.PI / 3) soldierA.parts.right.rotation.z += - Math.PI * data.delta
+													}
+													
+													if (this.phase2.x0 && Math.abs(soldierA.position.x - this.phase2.x0)>200) {
+														this.phase2.x0 = undefined 
+														soldierA.velocity.x = Math.sign(soldierA.velocity.x) * 50
+														this.phase2.stop = data.time
+													}
+													if (this.phase2.stop && data.time - this.phase2.stop > .3) {
+														this.phase2.stop = undefined; this.phase2.start = undefined
+														this.phase2.on = false
+														this.start = undefined; this.on = false
+														
+														soldierA.parts.right.rotation.z = Math.PI/6; soldierA.parts.right.rotation.y = 0
+														soldierA.parts.sword.rotation.x = 0
+														soldierA.parts.body.rotation.x = 0
+													}
+												}
+											}
+										},
+										shield: {
+											on: false,
+											update_game: function(soldierA, data) {
+												
+											}
+										},
+										death: {
+											on: false,
+											update_game: function(soldierA, data) {
+												soldierA.position.set(data.scene.bounds.left - 300, 0, 0)
+												this.on = false
+											}
+										},
+										respawn: {
+											on: false,
+											update_game: function(soldierA, data) {
+												soldierA.spawnable = false
+												soldierA.health.HP = soldierA.health.full
+												soldierA.health.mesh.scale.set(1, 1, 1); soldierA.health.mesh.visible = true; soldierA.health.mesh.material.color = new THREE.Color('darkgreen')
+												soldierA.scale.set(1, 1, 1)
+												soldierA.visible = true
+												soldierA.position.copy(soldierA.spawnPt)
+												soldierA.traverse(function(obj){
+													obj.active = true
+												})
+												
+												soldierA.action.walk.on = true
+												soldierA.parts.body.rotation.y = -Math.PI/2; soldierA.parts.body.rotation.x = 0
+												soldierA.parts.shield.rotation.x = Math.PI/2
+												soldierA.parts.right.rotation.z = Math.PI/6; soldierA.parts.right.rotation.y = 0
+												soldierA.parts.left.rotation.z = -Math.PI/3
+												soldierA.parts.sword.rotation.x = 0
+												
+												soldierA.landed = false
+												
+												soldierA.velocity.x = 50
+												soldierA.action.death.on = false
+												soldierA.action.attack.reset()
+											}
+										}
 									},
 									ondeath: function(data) {
-
+										this.health.mesh.visible = false
+										this.traverse(function(obj) {
+											obj.active = false;
+										})
 									},
 									sfx: undefined,
 									setup: function(soldierA) {
-										soldierA.add(soldierA.getObjectByName('soldierA_body'))
-										soldierA.add(soldierA.getObjectByName('soldierA_right'))
-										soldierA.add(soldierA.getObjectByName('soldierA_left'))
-										soldierA.add(soldierA.getObjectByName('soldierA_foot'))
-										soldierA.add(soldierA.getObjectByName('soldierA_eye'))
-										soldierA.add(soldierA.getObjectByName('soldierA_shield'))
-										soldierA.add(soldierA.getObjectByName('soldierA_sword'))
+										
 										soldierA.parts = {
 											body: soldierA.getObjectByName('soldierA_body'),
 											right: soldierA.getObjectByName('soldierA_right'),
@@ -2250,18 +2554,28 @@ var LEVEL = [];
 											shield: soldierA.getObjectByName('soldierA_shield'),
 											sword: soldierA.getObjectByName('soldierA_sword')
 										}
+										soldierA.add(soldierA.getObjectByName('soldierA_body'))
+										soldierA.parts.body.add(soldierA.getObjectByName('soldierA_right'))
+										soldierA.parts.body.add(soldierA.getObjectByName('soldierA_left'))
+										soldierA.parts.body.add(soldierA.getObjectByName('soldierA_foot'))
+										soldierA.parts.body.add(soldierA.getObjectByName('soldierA_eye'))
+										soldierA.parts.body.add(soldierA.getObjectByName('soldierA_shield'))
+										soldierA.parts.body.add(soldierA.getObjectByName('soldierA_sword'))
 										for (var c=0 ; c<soldierA.children.length ; c++)
 											if (soldierA.children[c].name.substring(0, 8) !== 'soldierA')
 												soldierA.remove(soldierA.children[c])
-										soldierA.parts.right.position.x = -15
-										soldierA.parts.right.rotation.z = 30 * (Math.PI/180)
+										soldierA.parts.right.position.x = -10
 										soldierA.parts.right.add(soldierA.parts.sword)
-										soldierA.parts.sword.position.x -= 25
-										soldierA.parts.left.position.x = 15
+										soldierA.parts.sword.position.x -= 20; soldierA.parts.sword.DPS = 50
+										soldierA.parts.left.position.x = 10
 										soldierA.parts.left.add(soldierA.parts.shield)
-										soldierA.parts.shield.position.x = 25
+										soldierA.parts.shield.position.x = 20
 										soldierA.parts.shield.material.side = THREE.DoubleSide
 										for (var p in soldierA.parts) soldierA.parts[p].matrixAutoUpdate = false
+										
+										soldierA.add(soldierA.health.mesh); soldierA.health.mesh.position.y = 40
+										soldierA.position.set(level.bounds.left-300, 0, 0)
+										soldierA.updateMatrix()
 									},
 									others: function(soldierA) {
 
@@ -2274,9 +2588,14 @@ var LEVEL = [];
 					function updateB(data) {
 						if (level.loadcheck === level.loadcheck_max - 1) {
 							
-							var g_launcher0 = new G_Launcher(new THREE.Vector3(1000, 200, 0), new THREE.Vector3(1000, 200, 0))
-							level.meshes.push(g_launcher0)
-
+							var soldierA = new Enemy(EnemyData.soldierA)
+							soldierA.location.set(100, 50, 0)
+							soldierA.spawnPt.set(100, 50, 0)
+							soldierA.traverse(function(obj) {
+								if (obj.purpose === 'healthbar') return;
+								level.enemies.push(obj)
+							})
+							level.meshes.push(soldierA)
 							
 							var directional = new THREE.DirectionalLight('white', .3)
 							directional.position.set(0, 100, 150)
@@ -2339,7 +2658,7 @@ var LEVEL = [];
 						document.getElementById('audio-background').volume = .3
 						document.getElementById('audio-background').currentTime = 0
 						document.getElementById('audio-background').load()
-						document.getElementById('audio-background').play()
+						//document.getElementById('audio-background').play()
 						
 						while (level.hearts.length < data.player.game.lives) level.hearts.push(level.hearts[0].clone(true))
 						while (level.hearts.length > data.player.game.lives) data.scene.remove(level.hearts.pop())

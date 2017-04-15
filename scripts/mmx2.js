@@ -190,7 +190,7 @@
 					user.keysMap = clientKeys;
 					
 					players.push(user)
-					Level = new LEVEL[0];
+					Level = new LEVEL[1];
 					level_loaded = false;
 					
 					
@@ -311,8 +311,8 @@
 			
 		}
 		
-		if (user) updatePlayer(user, delta);
-		var data = {renderer: renderer, window: window, camera: camera, delta:Math.min(delta, 1/60), scene:scene, player: user, time: time};
+		if (user) updatePlayer(user, 1/60);
+		var data = {renderer: renderer, window: window, camera: camera, delta: 1/60, scene:scene, player: user, time: time};
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {
 			if (scene.children[ob].update_game(data) === -1) {
 				scene.remove(scene.children[ob]);
