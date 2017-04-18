@@ -190,7 +190,7 @@
 					user.keysMap = clientKeys;
 					
 					players.push(user)
-					Level = new LEVEL[1];
+					Level = new LEVEL[0];
 					level_loaded = false;
 					
 					
@@ -199,20 +199,20 @@
 			}
 			
 			clientKeys[key] = true;
-			
+			/*
 			if (key === 82 && user && user.controls.enabled) {
 				user.game.health.mesh.visible = true;
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
-				user.position.set(100, 900, 0)
-			}
+				user.position.set(6691, -800, 0)
+			}*/
 		}).on('keyup', function(e) {
 			var key = e.keyCode;
 			clientKeys[key] = false;
-		}).on('wheel', function(e) {
+		})/*.on('wheel', function(e) {
 			var dy = e.originalEvent.deltaY;
 			camera.position.z += (dy/5)
-		})
+		})*/
 		
 		var $setup = $('#setup');
 		var $display = $('#set_display');
@@ -755,12 +755,14 @@
 	}
 	
 	function updatePlayer(player, delta) {
+		player.game.elapsed = player.game.clock.getElapsedTime();
 		if (player.dead) return;
 		var keysMap = player.keysMap;
 		var g = 1100;
 		var Vx = 130;
 		var _dashSpd = 260;
-		var time = player.game.clock.getElapsedTime();
+		var time = player.game.elapsed;
+		
 			
 		player.position.x += player.game.other.v.x * delta
 		//if (player.game.other.onground && player.game.other.v.y<0) player.position.y += player.game.other.v.y * delta - 1

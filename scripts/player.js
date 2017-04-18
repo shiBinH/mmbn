@@ -40,7 +40,7 @@ var X = {
 				glow.scale.multiplyScalar(1.3);
 				charge1.add(glow)
 				charge1.purpose = 'projectile';
-				charge1.source = player.socket;
+				charge1.source = player.socket || 'player';
 				charge1.DPS = 30;
 				charge1.velocity = getVel(player, 100);
 				charge1.active = true;
@@ -114,7 +114,7 @@ var X = {
 				glow.scale.set(19, 19, 19)
 				charge2.add(glow)
 				charge2.purpose = 'projectile';
-				charge2.source = player.socket;
+				charge2.source = player.socket || 'player';
 				charge2.DPS = 50;
 				charge2.velocity = getVel(player, 250);
 				charge2.rotation.z = Math.PI/-2
@@ -749,7 +749,7 @@ var X = {
 		if (!proto.prev[player.name]) proto.prev[player.name] = 0;
 		if (time-proto.prev[player.name]<.175) return null;
 		this.purpose = 'projectile';
-		this.source = player.socket;
+		this.source = player.socket || 'player';
 		this.DPS = 8;
 		THREE.Mesh.call(this, new THREE.SphereGeometry(4),new THREE.MeshBasicMaterial({color: new THREE.Color(0xffc266)}));
 		
@@ -845,6 +845,10 @@ var X = {
 				
 				return -1;
 			} else if (current.purpose === 'enemy' && current.active) {
+				if (current.shield) {
+					
+					return -1;
+				}
 				while (current!==null && !current.health) current = current.parent;
 				if (obj.sfx && obj.sfx.hit) obj.sfx.hit.play();
 				else if (current.sfx && current.sfx.hit) current.sfx.hit.play();
