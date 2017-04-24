@@ -85,6 +85,7 @@ var LEVEL = [];
 		this.bounds = {left: -5000, right:10000, bottom: -200, top: 10000}
 		this.hearts = []
 		this.cleared = false
+		this.gameover = false
 		var level = this;
 		
 		var fontLoader = new THREE.FontLoader();
@@ -158,6 +159,7 @@ var LEVEL = [];
 						}
 
 						data.scene.add(data.player)
+						data.scene.add(data.player.charge1); data.scene.add(data.player.charge2)
 						data.scene.add(data.player.game.health.mesh); data.player.game.health.mesh.position.y += 150; data.player.game.health.mesh.visible = true
 						data.player.dead = null; data.player.game.health.HP = data.player.game.health.full;
 						while (level.hearts.length < data.player.game.lives) level.hearts.push(level.hearts[0].clone(true))
@@ -287,6 +289,10 @@ var LEVEL = [];
 		
 		this.update_game = function(data) {
 			if (data.player.dead !== null && data.player.game.elapsed - data.player.dead > 3) {
+				if (!data.player.game.lives) {
+					this.gameover = true
+					return;
+				}
 				this.events.respawn.on = true
 			} else if (data.player.dead!==null && data.time-data.player.dead>2 && document.getElementById('screen_changer').style.display==='none') {
 				$('#screen_changer').fadeIn(500)
@@ -457,7 +463,7 @@ var LEVEL = [];
 																			)
 							obj.matrixAutoUpdate = false;
 							sub.call(obj, source)
-							obj.position.set(level.bounds.left-300, 0, 0)
+							obj.position.set(level.bounds.left-300, level.bounds.bottom-300, 0)
 							obj.updateMatrix()
 							return obj;
 							function sub(source) {
@@ -496,10 +502,10 @@ var LEVEL = [];
 											player.game.health.prev = player.game.clock.getElapsedTime();
 										}
 										this.active = false;
-										this.position.set(data.scene.bounds.left-300)
+										this.position.set(data.scene.bounds.left-300, data.scene.bounds.bottom-300, 0)
 									} else if (this.position.distanceTo(source.position)>500) {
 										this.active = false;
-										this.position.set(data.scene.bounds.left-300)
+										this.position.set(data.scene.bounds.left-300, data.scene.bounds.bottom-300, 0)
 									}
 									//	call ondeath
 									
@@ -507,7 +513,7 @@ var LEVEL = [];
 									for (var obj in intersections) {
 										if (intersections[obj].object.purpose === 'surface') {
 											this.active = false;
-											this.position.set(data.scene.bounds.left - 300)
+											this.position.set(data.scene.bounds.left - 300, data.scene.bounds.bottom-300, 0)
 											break;
 										}
 									}
@@ -569,7 +575,7 @@ var LEVEL = [];
 		directional.position.set(0, 100, 200);
 		this.meshes.push(directional)
 
-		
+	
 		this.meshes.push(newBlock(-100, 600, 0, 500, 50));
 		this.meshes.push(newBlock(600, 330, -70, 500, 50));
 		this.meshes.push(newBlock(1000, 140, -70, 500, 50));
@@ -589,6 +595,7 @@ var LEVEL = [];
 		this.meshes.push(newBlock(4350, 500, 750, 300, 50))
 		this.meshes.push(newBlock(4350, 500, 1300, 300, 50));
 		this.meshes.push(newBlock(4800, 300, 1300, 800, 50))
+		
 		
 		var door = new Door(new THREE.Vector3(3970, 850, 0), -1, 'door1')
 		for (var part in door.meshes) this.meshes.push(door.meshes[part])
@@ -766,7 +773,7 @@ var LEVEL = [];
 		
 		function Flying(loc, spawn, offset) {
 			var enemy = new Enemy(EnemyData.flying)
-			enemy.position.set(level.bounds.left-300, 0, 0)
+			enemy.position.set(level.bounds.left-300, level.bounds.bottom-300, 0)
 			enemy.traverse(function(obj){level.enemies.push(obj);})
 			enemy.spawnPt.copy(spawn)
 			enemy.location.copy(loc)
@@ -1515,7 +1522,7 @@ var LEVEL = [];
 	})
 	//	LEVEL 2
 	LEVEL.push(function(){
-		this.id = 1
+		this.id = 0
 		this.enemies = []
 		this.meshes = []
 		this.loaded = false
@@ -1528,12 +1535,16 @@ var LEVEL = [];
 		this.flags = {
 			wall1: true
 		}
+		this.gameover = false
 		var level = this
 		
 		
 		this.update_game = function(data) {
-			
 			if (data.player.dead !== null && data.player.game.elapsed - data.player.dead > 3) {
+				if (!data.player.game.lives) {
+					this.gameover = true
+					return;
+				}
 				this.events.respawn.on = true
 			} else if (data.player.dead!==null &&data.player.game.elapsed - data.player.dead>2 && document.getElementById('screen_changer').style.display==='none') {
 				$('#screen_changer').fadeIn(500)
@@ -1604,6 +1615,7 @@ var LEVEL = [];
 									mesh = collada.scene.children[i].children[0]
 									if (mesh.parent.name) mesh.name = mesh.parent.name
 									if (mesh.name === 'entrance') mesh.material.side = THREE.DoubleSide
+									else if (mesh.name.substring(0, 5) === 'Torus') continue;
 									else if (mesh.name.substring(0, 5) === 'spike') {
 										mesh.purpose = 'enemy'
 										mesh.DPS = 500
@@ -1611,7 +1623,6 @@ var LEVEL = [];
 										level.enemies.push(mesh)
 									} else if (mesh.name.substring(0, 6) === 'moving') {
 										let moving = mesh;
-										console.log(moving.name)
 										if (moving.name !== 'moving3') {
 											moving.x0 = moving.position.x
 											moving.velocity = new THREE.Vector3(75, 0, 0)
@@ -1716,12 +1727,14 @@ var LEVEL = [];
 									mesh.down = new THREE.Vector3(0, -10, 0)
 									level.meshes.push(mesh)
 									mesh.matrixAutoUpdate = false
+									mesh.updateMatrix()
 								}
 
 								level.loadcheck++;
 							}
 						)
-						loader.load(
+						var loader2 = new THREE.ColladaLoader()
+						loader2.load(
 							'collada/stage2_enemies.dae',
 							function(collada) {
 								var soldierA_proto = new THREE.Group()
@@ -1849,7 +1862,7 @@ var LEVEL = [];
 											on: false,
 											update_game: function(bird, data) {
 												bird.visible = false
-												bird.position.set(data.scene.bounds.left - 300, 0, 0)
+												bird.position.set(data.scene.bounds.left - 300, data.scene.bounds.bottom - 300, 0)
 												
 												this.on = false
 											}
@@ -2061,11 +2074,11 @@ var LEVEL = [];
 											this.action.death.update_game(this, data)
 											return;
 										}
-										if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<600) {
+										if (!this.active && this.spawnable && this.location.distanceTo(data.player.position)<400) {
 											this.action.respawn.update_game(this, data)
-										} else if (!this.active && this.location.distanceTo(data.player.position)>=600) this.spawnable = true;
+										} else if (!this.active && this.location.distanceTo(data.player.position)>=800) this.spawnable = true;
 										if ((data.player.dead && data.player.game.elapsed - data.player.dead>3) || (!data.player.dead && data.player.position.distanceTo(this.position)>800)) {
-											this.action.death.update_game(this, data)
+											this.action.death.on = true
 											this.ondeath(data)
 										}
 										
@@ -2126,14 +2139,14 @@ var LEVEL = [];
 													g_launcher.parts.tip.position.y = 30
 													for (var set=0 ; set<3 ; set++) {
 														if (g_launcher.others.proj.ready[set] === 3) {
-															this.prev = data.time
+															
 															var launchPt = g_launcher.parts.tip.getWorldPosition()
 															var deltaX = data.player.position.x-launchPt.x
 															if (deltaX<0) deltaX *= -1
 															var deltaY = data.player.position.y-launchPt.y
 															var v = Math.sqrt((g * deltaX*deltaX) / (2 * (deltaY-deltaX)))
 															if (isNaN(v)) return;
-
+															this.prev = data.time
 															g_launcher.action.fire.update_game(g_launcher, data, v, set);
 															break;
 														}
@@ -2177,7 +2190,7 @@ var LEVEL = [];
 											on: false,
 											update_game: function(g_launcher, data) {
 												if (!this.on) return;
-												g_launcher.position.set(data.scene.bounds.left-300, 0, 0)
+												g_launcher.position.set(data.scene.bounds.left-300, data.scene.bounds.bottom - 300, 0)
 												this.on = false
 											}
 										}
@@ -2209,7 +2222,7 @@ var LEVEL = [];
 										g_launcher.parts.tip.position.y = 30
 										
 										g_launcher.add(g_launcher.health.mesh); g_launcher.health.mesh.position.y = 55
-										g_launcher.position.set(level.bounds.left-300, 0, 0)
+										g_launcher.position.set(level.bounds.left-300, level.bounds.bottom-300, 0)
 									},
 									others: function(g_launcher) {
 										
@@ -2298,7 +2311,7 @@ var LEVEL = [];
 														start: undefined,
 														update_game: function(ball, data) {
 															if (data.time - this.start > 1) {
-																ball.position.set(data.scene.bounds.left - 300, 0, 0)
+																ball.position.set(data.scene.bounds.left - 300, data.scene.bounds.bottom - 300, 0)
 																ball.src.others.proj.ready[+ball.name.charAt(1)]++;
 																
 																this.active = false
@@ -2310,7 +2323,7 @@ var LEVEL = [];
 													}
 												}
 												this.ondeath = function(data) {
-													this.position.set(data.scene.bounds.left - 300, 0, 0)
+													this.position.set(data.scene.bounds.left - 300, data.scene.bounds.bottom - 300, 0)
 													this.active = false
 													this.action.attack.on = this.action.death.on = false
 													this.action.death.start = undefined
@@ -2600,7 +2613,7 @@ var LEVEL = [];
 										death: {
 											on: false,
 											update_game: function(soldierA, data) {
-												soldierA.position.set(data.scene.bounds.left - 300, 0, 0)
+												soldierA.position.set(data.scene.bounds.left - 300, data.scene.bounds.bottom - 300, 0)
 												this.on = false
 											}
 										},
@@ -2672,7 +2685,7 @@ var LEVEL = [];
 										for (var p in soldierA.parts) soldierA.parts[p].matrixAutoUpdate = false
 										
 										soldierA.add(soldierA.health.mesh); soldierA.health.mesh.position.y = 40
-										soldierA.position.set(level.bounds.left-300, 0, 0)
+										soldierA.position.set(level.bounds.left-300, level.bounds.bottom-300, 0)
 										soldierA.updateMatrix()
 									},
 									others: function(soldierA) {
@@ -2685,56 +2698,63 @@ var LEVEL = [];
 					}
 					function updateB(data) {
 						if (level.loadcheck === level.loadcheck_max - 1) {
-							var g_launcher = new G_Launcher(new THREE.Vector3(1100, 150, 0), new THREE.Vector3(1100, 150, 0))
-							level.meshes.push(g_launcher)
-							g_launcher = new G_Launcher(new THREE.Vector3(1300, 250, 0), new THREE.Vector3(1300, 250, 0))
-							level.meshes.push(g_launcher)
-							g_launcher = new G_Launcher(new THREE.Vector3(4000, -440, 0), new THREE.Vector3(4000, -440, 0))
-							level.meshes.push(g_launcher)
-							g_launcher = new G_Launcher(new THREE.Vector3(5100, -560, 0), new THREE.Vector3(5100, -560, 0))
-							level.meshes.push(g_launcher)
-							
-							var soldierA = new SoldierA(new THREE.Vector3(1950, 350, 0), new THREE.Vector3(1950, 350, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(2250, 350, 0), new THREE.Vector3(2250, 350, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(2550, 350, 0), new THREE.Vector3(2550, 350, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(5750, -550, 0), new THREE.Vector3(5750, -550, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(5430, -990, 0), new THREE.Vector3(5430, -990, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(5700, -990, 0), new THREE.Vector3(5700, -990, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(5137, -1552, 0), new THREE.Vector3(5137, -1552, 0))
-							level.meshes.push(soldierA)
-							soldierA = new SoldierA(new THREE.Vector3(6700, -1400, 0), new THREE.Vector3(6700, -1400, 0))
-							level.meshes.push(soldierA)
 							
 							
-							var bird = new Bird(new THREE.Vector3(3360, 150, 0), new THREE.Vector3(3360, 150, 0), new THREE.Vector3(0, 100, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(3840, 150, 0), new THREE.Vector3(3840, 0, 0), new THREE.Vector3(100, 0, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(4150, -280, 0), new THREE.Vector3(4150, -280, 0), new THREE.Vector3(-100, 0, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(4575, -360, 0), new THREE.Vector3(4575, -360, 0), new THREE.Vector3(-100, 0, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(4575, -460, 0), new THREE.Vector3(4575, -460, 0), new THREE.Vector3(-100, 0, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(5340, -890, 0), new THREE.Vector3(5340, -890, 0), new THREE.Vector3(-100, 0, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(5675, -1521, 0), new THREE.Vector3(5675, -1521, 0), new THREE.Vector3(0, 100, 0))
-							level.meshes.push(bird)
-							bird = new Bird(new THREE.Vector3(5855, -1521, 0), new THREE.Vector3(5855, -1521, 0), new THREE.Vector3(0, 100, 0))
-							level.meshes.push(bird)
+							var g_launcher0 = new G_Launcher(new THREE.Vector3(1100, 150, 0), new THREE.Vector3(1100, 150, 0))
+							level.meshes.push(g_launcher0)
+							var g_launcher1 = new G_Launcher(new THREE.Vector3(1300, 250, 0), new THREE.Vector3(1300, 250, 0))
+							level.meshes.push(g_launcher1)
+							var g_launcher2 = new G_Launcher(new THREE.Vector3(4000, -440, 0), new THREE.Vector3(4000, -440, 0))
+							level.meshes.push(g_launcher2)
+							var g_launcher3 = new G_Launcher(new THREE.Vector3(5100, -560, 0), new THREE.Vector3(5100, -560, 0))
+							level.meshes.push(g_launcher3)
+							
+							
+							
+							var soldierA0 = new SoldierA(new THREE.Vector3(1950, 350, 0), new THREE.Vector3(1950, 350, 0))
+							level.meshes.push(soldierA0)
+							var soldierA1 = new SoldierA(new THREE.Vector3(2250, 350, 0), new THREE.Vector3(2250, 350, 0))
+							level.meshes.push(soldierA1)
+							var soldierA2 = new SoldierA(new THREE.Vector3(2550, 350, 0), new THREE.Vector3(2550, 350, 0))
+							level.meshes.push(soldierA2)
+							var soldierA3 = new SoldierA(new THREE.Vector3(5750, -550, 0), new THREE.Vector3(5750, -550, 0))
+							level.meshes.push(soldierA3)
+							var soldierA4 = new SoldierA(new THREE.Vector3(5430, -990, 0), new THREE.Vector3(5430, -990, 0))
+							level.meshes.push(soldierA4)
+							var soldierA5 = new SoldierA(new THREE.Vector3(5700, -990, 0), new THREE.Vector3(5700, -990, 0))
+							level.meshes.push(soldierA5)
+							var soldierA6 = new SoldierA(new THREE.Vector3(5137, -1552, 0), new THREE.Vector3(5137, -1552, 0))
+							level.meshes.push(soldierA6)
+							var soldierA7 = new SoldierA(new THREE.Vector3(6700, -1400, 0), new THREE.Vector3(6700, -1400, 0))
+							level.meshes.push(soldierA7)
+							
+							
+							
+							var bird0 = new Bird(new THREE.Vector3(3360, 150, 0), new THREE.Vector3(3360, 150, 0), new THREE.Vector3(0, 100, 0))
+							level.meshes.push(bird0)
+							var bird1 = new Bird(new THREE.Vector3(3840, 150, 0), new THREE.Vector3(3840, 0, 0), new THREE.Vector3(100, 0, 0))
+							level.meshes.push(bird1)
+							var bird2 = new Bird(new THREE.Vector3(4150, -280, 0), new THREE.Vector3(4150, -280, 0), new THREE.Vector3(-100, 0, 0))
+							level.meshes.push(bird2)
+							var bird3 = new Bird(new THREE.Vector3(4575, -360, 0), new THREE.Vector3(4575, -360, 0), new THREE.Vector3(-100, 0, 0))
+							level.meshes.push(bird3)
+							var bird4 = new Bird(new THREE.Vector3(4575, -460, 0), new THREE.Vector3(4575, -460, 0), new THREE.Vector3(-100, 0, 0))
+							level.meshes.push(bird4)
+							var bird5 = new Bird(new THREE.Vector3(5340, -890, 0), new THREE.Vector3(5340, -890, 0), new THREE.Vector3(-100, 0, 0))
+							level.meshes.push(bird5)
+							var bird6 = new Bird(new THREE.Vector3(5675, -1521, 0), new THREE.Vector3(5675, -1521, 0), new THREE.Vector3(0, 100, 0))
+							level.meshes.push(bird6)
+							var bird7 = new Bird(new THREE.Vector3(5855, -1521, 0), new THREE.Vector3(5855, -1521, 0), new THREE.Vector3(0, 100, 0))
+							level.meshes.push(bird7)
 							
 							
 							var directional = new THREE.DirectionalLight('white', .3)
 							directional.position.set(0, 100, 150)
 							level.meshes.push(directional)
-
+							
+							level.events.setup.start = undefined
 							level.events.setup.on = false
+							level.events.setup.progress = 0
 							level.events.respawn.on = true
 							level.loadcheck++
 							level.meshloaded = true
@@ -2747,7 +2767,7 @@ var LEVEL = [];
 									if (obj.purpose === 'healthbar') return;
 									level.enemies.push(obj)
 								})
-								soldierA.position.set(level.bounds.left-300, 0, 0)
+								soldierA.position.set(level.bounds.left-300, level.bounds.bottom-300, 0)
 								return soldierA;
 							}
 							
@@ -2761,7 +2781,7 @@ var LEVEL = [];
 								})
 								for (var i=0 ; i<3 ; i++) {
 									for (var j=0 ; j<g_launcher.others.proj['set'+i].length ; j++) {
-										g_launcher.others.proj['set'+i][j].position.set(level.bounds.left - 300, 0, 0)
+										g_launcher.others.proj['set'+i][j].position.set(level.bounds.left - 300, level.bounds.bottom-300, 0)
 										g_launcher.others.proj['set'+i][j].updateMatrix()
 										level.meshes.push(g_launcher.others.proj['set'+i][j])
 										level.enemies.push(g_launcher.others.proj['set'+i][j])
@@ -2779,7 +2799,7 @@ var LEVEL = [];
 									if (obj.purpose === 'healthbar') return;
 									level.enemies.push(obj)
 								})
-								bird.position.set(level.bounds.left-300, 0, 0)
+								bird.position.set(level.bounds.left-300, level.bounds.bottom-300, 0)
 								return bird;
 							}
 						}

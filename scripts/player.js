@@ -217,7 +217,6 @@ var X = {
 	function Player(name, controls, plyrN) {
 		this.keysMap = {};
 		this.name = name;
-		this.lives = 5
 		this.socket = null;
 		this.name_Group = new THREE.Group();
 		this.purpose = 'player';

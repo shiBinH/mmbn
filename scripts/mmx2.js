@@ -192,20 +192,26 @@
 					players.push(user)
 					Level = new LEVEL[0];
 					level_loaded = false;
-					
+					console.log(scene.children)
 					
 				}
 				return;
 			}
 			
 			clientKeys[key] = true;
+			
 			/*
 			if (key === 82 && user && user.controls.enabled) {
+				
+				
 				user.game.health.mesh.visible = true;
 				user.game.health.HP = user.game.health.full;
 				user.dead = null;
-				user.position.set(6691, -800, 0)
-			}*/
+				user.position.set(3600, 900, 0)
+				
+				
+			}
+			*/
 		}).on('keyup', function(e) {
 			var key = e.keyCode;
 			clientKeys[key] = false;
@@ -228,60 +234,7 @@
 		
 		$setup.find('#set_controls').click()
 		
-		/*
-		var mesh = new THREE.Mesh(new THREE.BoxGeometry(300, 100, 50), new THREE.MeshPhysicalMaterial())
-		mesh.purpose = 'surface'
-		mesh.position.set(-300, 0, 0)
-		mesh.velocity = new THREE.Vector3(10,0 , 0)
-		mesh.down = new THREE.Vector3(0, -50, 0)
-		mesh.name = 'moving'
-		mesh.rotation.z = 20 * Math.PI/180
-		mesh.update_game = function(data) {
-			if (mesh.position.y > 100) mesh.velocity.y = -30;
-			else if (mesh.position.y < -100)  mesh.velocity.y = 30 ;
-			//mesh.position.y += mesh.velocity.y * data.delta
-			mesh.position.x += mesh.velocity.x * data.delta
-			
-			if (mesh.position.x>-300) mesh.velocity.x = -10;
-			else if (mesh.position.x<-500) mesh.velocity.x = 10;
-		}
-		scene.add(mesh)
-		
-		var mesh2 = new THREE.Mesh(new THREE.SphereGeometry(33, 16), new THREE.MeshPhysicalMaterial())
-		mesh2.purpose = 'test'
-		mesh2.position.set(-200, 200, 0)
-		mesh2.velocity = new THREE.Vector3(0, 0, 0)
-		mesh2.raycs = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 33)
-		mesh2.other = {
-			v: new THREE.Vector3()
-		}
-		mesh2.update_game = function(data) {
-			mesh2.position.y += Math.min(mesh2.other.v.y * data.delta - 1, 0)
-			
-			mesh2.raycs.ray.origin.copy(mesh2.position)
-			mesh2.velocity.y -= 1100 * data.delta
-			var intersections = mesh2.raycs.intersectObjects(data.scene.children)
-			for (var i=0 ; i<intersections.length ; i++) {
-				if (intersections[i].object.purpose === 'surface') {
-					mesh2.velocity.y = 0
-					mesh2.position.y = intersections[i].point.y + mesh2.raycs.far
-					
-					if (intersections[i].object.velocity) {
-						mesh2.other.v.copy (intersections[i].object.velocity)
-					}
-						
-					break;
-				}
-			}
-			if (!intersections.length) {
-				//console.log('no intersections')
-				mesh2.other.v.set(0, 0, 0)
-			}
-			mesh2.position.y += mesh2.velocity.y * data.delta
-		}
-		
-		scene.add(mesh2)
-		*/
+
 		
 		
 	}
@@ -290,14 +243,27 @@
 		var delta = clock.getDelta();
 		var time = clock.getElapsedTime();
 		
-		if (Level && Level.cleared) {
+		if ((Level && Level.cleared) || (Level && Level.gameover)) {
+			var newScene = new THREE.Scene()
 			for (var i=scene.children.length-1 ; i>=0 ; i--) {
-				if (scene.children[i].name === 'startup') continue
-				scene.remove(scene.children[i])
+				if (scene.children[i].name === 'startup') {
+					newScene.add(scene.children[i])
+					continue;
+				}
+				//	scene.remove(scene.children[i])
 			}
-			Level = new LEVEL[Level.id]
+			scene = newScene
+			scene.bounds = {left: -1000, right: 1000, bottom: -500};
+			if (!Level.gameover) {
+				console.log(scene.children)
+				Level = new LEVEL[Level.id]
+			}
+			else {
+				Level.gameover = false
+				Level = new LEVEL[0];
+				user.game.lives = 1
+			}
 			level_loaded = false
-			console.log(scene)
 		}
 		if (!(Level && Level.loaded) && !(Level && Level.events.setup)) return;
 		if (Level && (Level.loaded||Level.meshloaded) && level_loaded===false) {
@@ -310,7 +276,6 @@
 			$('#screen_changer').dequeue().slideUp(1000);
 			
 		}
-		
 		if (user) updatePlayer(user, 1/60);
 		var data = {renderer: renderer, window: window, camera: camera, delta: 1/60, scene:scene, player: user, time: time};
 		for (var ob=0 ; ob<scene.children.length ; ob++) if (scene.children[ob].update_game) {

@@ -1,4 +1,4 @@
-if (!this.A) this.A = {};
+this.A = {};
 
 (function() {
 
