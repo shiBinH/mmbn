@@ -1,3 +1,4 @@
+"use strict";
 const http = require('http');
 const fs = require('fs');
 const socketio = require('socket.io');
@@ -6,7 +7,7 @@ var hostname;
 var time = new Date();
 
 if (process.env.NODE_ENV === 'production') hostname = 'lit-hollows-49930.herokuapp.com';
-else hostname =  process.env.HOSTNAME || '192.168.1.5';
+else hostname =  process.env.HOSTNAME || process.env.IP || '192.168.1.5';
 const port = process.env.PORT || 4000;
 
 
